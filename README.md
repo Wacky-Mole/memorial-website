@@ -1,37 +1,92 @@
-# Memorial Website
+# Memorial Website - Dynamic Installation
 
-This project is a dynamic memorial website built in PHP, allowing users to create memorial entries for their loved ones. The website prompts users for their email, the name of the deceased, and a photo of their loved ones during the installation process.
-
-## License
-
-This project is licensed under the BSD 3-Clause License.
-
-## Requirements
-
-- PHP 8.1 or higher with the `pdo_sqlite` extension.
-- May work with older PHP versions, but this is not guaranteed.
-
-## Installation Instructions
-
-1. Unzip the files on your server.
-2. Navigate to the `src/install.php` file in your web browser.
-3. Fill out the installation form with the following details:
-   - Email
-   - Name of the deceased
-   - Upload a basic photo of your loved one
-4. After submitting the form, the website will be configured, and you can access the main features.
+A dynamic memorial website system written in PHP that can be deployed for any loved one.
 
 ## Features
 
-- Users can submit memorial entries with their email, the name of the deceased, and a photo.
-- Admins can manage entries, approve or discard submissions, and edit existing entries.
-- The website includes an admin dashboard for managing settings and user credentials.
-- All entries are stored securely, with options to remove or archive them.
+- **Easy Installation**: First-time setup wizard guides you through configuration
+- **Dynamic Configuration**: Each installation is customized for a specific memorial
+- **Entry Moderation**: Approve or decline memory submissions before they appear publicly
+- **Photo Upload**: Optional memorial photo display
+- **No External Database**: Uses SQLite for zero-configuration deployment
+- **Timezone Support**: Configurable timezone for accurate timestamps
+- **Security**: IP-based login throttling and password hashing
 
-## Documentation
+## Requirements
 
-For more detailed instructions and information about the project, please refer to the `docs/index.html` file.
+- **PHP 8.1+** with **pdo_sqlite** extension
+- Web server (Apache, Nginx, etc.)
+- Write permissions for the installation directory
 
-## Screen Captures
+## Installation
 
-(Include any relevant screenshots or images here)
+1. **Upload files** to your web server
+2. **Visit your website** in a browser
+3. **Complete the installation wizard**:
+   - Enter the name of your loved one
+   - Provide your administrator email
+   - Set a secure password
+   - Optionally upload a memorial photo
+   - Select your timezone
+4. **Access the admin panel** at `~/admin/`
+
+### First Login
+After installation, log in with:
+- **Email**: The email you provided during installation
+- **Password**: The password you set during installation
+
+### Post-Installation
+- Change admin credentials in `~/admin/settings.php`
+- Moderate new entries at `~/admin/`
+- View the public memorial page at the root URL
+
+## Workflow
+
+1. **Visitors submit memories** via the public form
+2. **Admin reviews submissions** in the admin panel
+3. **Approved entries** appear on the public memorial page
+4. **Declined entries** are moved to the bin
+5. **Deleted entries** can be restored from the bin
+
+## Security Notes
+
+- Admin login attempts are rate-limited by IP address
+- Passwords are hashed using bcrypt
+- Configuration file is auto-generated and should not be committed to version control
+
+## File Structure
+
+```
+install.php              # One-time installation wizard
+config.php              # Auto-generated configuration (created during install)
+memorial.db             # SQLite database (created during install)
+index.php               # Public memorial page
+form.php                # Memory submission form
+admin/                  # Administration panel
+  index.php             # Entry moderation
+  settings.php          # Admin settings
+images/memorial/        # Uploaded memorial photos
+```
+
+## Customization
+
+After installation, you can customize:
+- Site appearance via `styles/style.css` and `styles/theme.css`
+- Memorial photo (upload via admin settings or replace in `images/memorial/`)
+- Text formatting options in `service/storage.php`
+
+## Reinstallation
+
+To reset and reinstall:
+1. Delete `config.php`
+2. Delete `memorial.db`
+3. Clear `images/memorial/` directory
+4. Visit the site to run installation wizard again
+
+## License
+
+Licensed under BSD 3-Clause License
+
+## Support
+
+For issues or questions, please refer to the documentation in the `docs/` folder.

@@ -1,55 +1,35 @@
 <?php
 session_start();
 
-function saveMemorialEntry($email, $deceasedName, $photo) {
-    // Define the path to store the uploaded photo
-    $targetDir = "../images/memorial_photos/";
-    $targetFile = $targetDir . basename($photo["name"]);
-    $uploadOk = 1;
-    $imageFileType = strtolower(pathinfo($targetFile, PATHINFO_EXTENSION));
+// Save a memorial entry. Returns true on success, false on failure.
+function saveMemorialEntry($email, $contributorName, $message, $photoPath = '') {
+    // Append entry to a simple log (can be replaced by real DB logic)
+    $entry = [
+        'memorial' => (defined('MEMORIAL_NAME') ? MEMORIAL_NAME : ''),
+        'email' => $email,
+        'contributor' => $contributorName,
+        'message' => $message,
+        'photo' => $photoPath,
+        'created_at' => date('Y-m-d H:i:s')
+    ];
 
-    // Check if the image file is a actual image or fake image
-    $check = getimagesize($photo["tmp_name"]);
-    if ($check === false) {
-        echo "File is not an image.";
-        $uploadOk = 0;
+    $logDir = __DIR__ . '/../data/';
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0755, true);
     }
 
-    // Check file size (limit to 2MB)
-    if ($photo["size"] > 2000000) {
-        echo "Sorry, your file is too large.";
-        $uploadOk = 0;
-    }
-
-    // Allow certain file formats
-    if (!in_array($imageFileType, ['jpg', 'png', 'jpeg', 'gif'])) {
-        echo "Sorry, only JPG, JPEG, PNG & GIF files are allowed.";
-        $uploadOk = 0;
-    }
-
-    // Check if $uploadOk is set to 0 by an error
-    if ($uploadOk == 0) {
-        echo "Sorry, your file was not uploaded.";
-    } else {
-        // If everything is ok, try to upload file
-        if (move_uploaded_file($photo["tmp_name"], $targetFile)) {
-            // Here you would typically save the entry to a database
-            // For demonstration, we'll just return the data
-            return [
-                'email' => $email,
-                'deceasedName' => $deceasedName,
-                'photoPath' => $targetFile
-            ];
-        } else {
-            echo "Sorry, there was an error uploading your file.";
-        }
-    }
-    return null;
+    $logFile = $logDir . 'memorial_entries.log';
+    $res = file_put_contents($logFile, json_encode($entry) . PHP_EOL, FILE_APPEND);
+    return $res !== false;
 }
 
 function getMemorialEntries() {
-    // This function would typically retrieve entries from a database
-    // For demonstration, we'll return an empty array
-    return [];
+    $logFile = __DIR__ . '/../data/memorial_entries.log';
+    if (!file_exists($logFile)) {
+        return [];
+    }
+    $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $entries = array_map(function($l){ return json_decode($l, true); }, $lines);
+    return $entries;
 }
 ?>

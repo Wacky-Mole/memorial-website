@@ -2,18 +2,19 @@
 // form.php
 
 session_start();
+require_once 'config.php';
+require_once 'service/navbar.php';
 
-// Check if the user is already logged in (for admin access)
+// If admin is logged in, provide link to admin panel
 if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
-    header("Location: admin/index.php");
-    exit;
+    // do nothing special here; admin panel available at /admin
 }
 
-// Initialize variables
-$email = $name = $photo = "";
-$email_err = $name_err = $photo_err = "";
+// Initialize variables for contributor form
+$email = $name = $message = "";
+$email_err = $name_err = $message_err = "";
 
-// Process form submission
+// Process form submission and forward to save.php
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Validate email
     if (empty(trim($_POST["email"]))) {
@@ -24,30 +25,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $email = trim($_POST["email"]);
     }
 
-    // Validate name
+    // Validate contributor name
     if (empty(trim($_POST["name"]))) {
-        $name_err = "Please enter the name of the deceased.";
+        $name_err = "Please enter your name.";
     } else {
         $name = trim($_POST["name"]);
     }
 
-    // Validate photo upload
-    if (isset($_FILES["photo"]) && $_FILES["photo"]["error"] == 0) {
-        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
-        if (!in_array($_FILES["photo"]["type"], $allowed_types)) {
-            $photo_err = "Only JPG, PNG, and GIF files are allowed.";
-        } else {
-            $photo = $_FILES["photo"];
-        }
+    // Validate message
+    if (empty(trim($_POST["message"]))) {
+        $message_err = "Please enter your memory or message.";
     } else {
-        $photo_err = "Please upload a photo.";
+        $message = trim($_POST["message"]);
     }
 
-    // Check for errors before saving
-    if (empty($email_err) && empty($name_err) && empty($photo_err)) {
-        // Save the data (this should be handled in save.php)
-        // Redirect to a success page or display a success message
-        header("Location: save.php?email=" . urlencode($email) . "&name=" . urlencode($name));
+    // If valid, post to save.php for processing
+    if (empty($email_err) && empty($name_err) && empty($message_err)) {
+        // Forward form data to save.php
+        // we'll submit via POST using a small HTML form to preserve file uploads if needed later
+        ?>
+        <form id="forward" action="save.php" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
+            <input type="hidden" name="name" value="<?php echo htmlspecialchars($name); ?>">
+            <input type="hidden" name="message" value="<?php echo htmlspecialchars($message); ?>">
+        </form>
+        <script>document.getElementById('forward').submit();</script>
+        <?php
         exit;
     }
 }
@@ -62,23 +65,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <title>Memorial Entry Form</title>
 </head>
 <body>
+    <?php renderNavbar(isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in']); ?>
     <div class="container">
-        <h2>Memorial Entry Form</h2>
+        <h2>Share Your Memory of <?php echo htmlspecialchars(!empty(MEMORIAL_NAME) ? MEMORIAL_NAME : 'a loved one'); ?></h2>
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" enctype="multipart/form-data">
             <div>
-                <label for="email">Email:</label>
+                <label for="email">Your Email:</label>
                 <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>">
                 <span><?php echo $email_err; ?></span>
             </div>
             <div>
-                <label for="name">Name of the Deceased:</label>
+                <label for="name">Your Name:</label>
                 <input type="text" name="name" value="<?php echo htmlspecialchars($name); ?>">
                 <span><?php echo $name_err; ?></span>
             </div>
             <div>
-                <label for="photo">Upload Photo:</label>
-                <input type="file" name="photo">
-                <span><?php echo $photo_err; ?></span>
+                <label for="message">Your Memory / Message:</label>
+                <textarea name="message"><?php echo htmlspecialchars($message); ?></textarea>
+                <span><?php echo $message_err; ?></span>
             </div>
             <div>
                 <input type="submit" value="Submit">
