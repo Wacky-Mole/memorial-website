@@ -11,69 +11,35 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 include_once '../config.php';
 include_once '../service/navbar.php';
 
-// Load memorial entries from log storage
-$dataFile = __DIR__ . '/../data/memorial_entries.log';
-$entries = [];
-if (file_exists($dataFile)) {
-    $lines = file($dataFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $i => $line) {
-        $decoded = json_decode($line, true);
-        if (!is_array($decoded)) continue;
-        // Ensure status exists
-        if (!isset($decoded['status'])) {
-            $decoded['status'] = 'NOT_APPROVED';
-        }
-        // attach synthetic id (line index)
-        $decoded['_id'] = $i;
-        $entries[] = $decoded;
-    }
-}
+require_once __DIR__ . '/../service/storage.php';
 
-// Handle moderation actions (approve, bin, delete)
 $message = '';
+// Handle moderation actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_POST['ids'])) {
     $action = $_POST['action'];
     $ids = array_map('intval', $_POST['ids']);
 
-    // Reload lines to ensure consistent write
-    $lines = file_exists($dataFile) ? file($dataFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
-    foreach ($ids as $id) {
-        if (!isset($lines[$id])) continue;
-        $entry = json_decode($lines[$id], true);
-        if (!is_array($entry)) continue;
-
-        if ($action === 'approve') {
-            $entry['status'] = 'APPROVED';
-            $lines[$id] = json_encode($entry);
-        } elseif ($action === 'bin') {
-            $entry['status'] = 'BIN';
-            $lines[$id] = json_encode($entry);
-        } elseif ($action === 'delete') {
-            // remove the line permanently
-            unset($lines[$id]);
+    if ($action === 'approve') {
+        if (updateEntriesStatus($ids, 'APPROVED')) {
+            $message = 'Selected entries approved.';
+        }
+    } elseif ($action === 'bin') {
+        if (updateEntriesStatus($ids, 'BIN')) {
+            $message = 'Selected entries moved to bin.';
+        }
+    } elseif ($action === 'delete') {
+        if (deleteEntries($ids)) {
+            $message = 'Selected entries deleted.';
         }
     }
+}
 
-    // Reindex lines and write back
-    $lines = array_values($lines);
-    if (file_put_contents($dataFile, implode(PHP_EOL, $lines) . (count($lines) ? PHP_EOL : '')) !== false) {
-        $message = 'Action completed successfully.';
-    } else {
-        $message = 'Failed to save changes. Check file permissions on data/';
-    }
-
-    // Reload entries for display
-    $entries = [];
-    if (file_exists($dataFile)) {
-        $lines2 = file($dataFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines2 as $i => $line) {
-            $decoded = json_decode($line, true);
-            if (!is_array($decoded)) continue;
-            if (!isset($decoded['status'])) $decoded['status'] = 'NOT_APPROVED';
-            $decoded['_id'] = $i;
-            $entries[] = $decoded;
-        }
-    }
+// Load entries according to filter
+$filter = $_GET['status'] ?? 'NOT_APPROVED';
+if ($filter === 'ALL') {
+    $entries = getEntries(null);
+} else {
+    $entries = getEntries($filter);
 }
 ?>
 

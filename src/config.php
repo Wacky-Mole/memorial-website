@@ -39,6 +39,18 @@ date_default_timezone_set(TIMEZONE);
 
 // File upload settings
 define('UPLOAD_DIR', 'uploads/');
+// Data directory and SQLite DB path (used for entries storage)
+if (!defined('DATA_DIR')) {
+	define('DATA_DIR', __DIR__ . '/data/');
+}
+
+if (!is_dir(DATA_DIR)) {
+	@mkdir(DATA_DIR, 0755, true);
+}
+
+if (!defined('DB_PATH')) {
+	define('DB_PATH', DATA_DIR . 'memorial.db');
+}
 define('MAX_FILE_SIZE', 2097152); // 2MB in bytes
 define('ALLOWED_FILE_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
 ?>
