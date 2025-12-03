@@ -71,7 +71,12 @@ class Installer
         $config .= "define('TIMEZONE', " . var_export($data['timezone'], true) . ");\n";
         $config .= "define('ADMIN_PASSWORD_HASH', " . var_export(password_hash($data['admin_password'], PASSWORD_DEFAULT), true) . ");\n\n";
         
+        // Database configuration (leave DB_PASS empty by default for SQLite/local setups)
         $config .= "// Database configuration\n";
+        $config .= "define('DB_HOST', 'localhost');\n";
+        $config .= "define('DB_NAME', 'memorial_website');\n";
+        $config .= "define('DB_USER', 'root');\n";
+        $config .= "define('DB_PASS', '');\n\n";
         $config .= "define('DB_PATH', __DIR__ . '/memorial.db');\n\n";
         
         $config .= "// Set timezone\n";

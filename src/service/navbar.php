@@ -34,6 +34,9 @@ function renderNavbar($isAdmin = false) {
     if ($isAdmin) {
         echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/index.php">Dashboard</a></li>';
         echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/settings.php">Settings</a></li>';
+        // Admins: also show public pages for quick viewing
+        echo '<li class="nav-item"><a class="nav-link" href="' . ($rootPrefix === '' ? '/about.php' : $rootPrefix . '/about.php') . '" target="_blank">About (view)</a></li>';
+        echo '<li class="nav-item"><a class="nav-link" href="' . ($rootPrefix === '' ? '/memorial_details.php' : $rootPrefix . '/memorial_details.php') . '" target="_blank">Memorial Details (view)</a></li>';
         echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/pages.php">Pages</a></li>';
         echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/change_password.php">Change Password</a></li>';
         echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/logout.php">Logout</a></li>';
