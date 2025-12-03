@@ -151,10 +151,10 @@ if (!isConfigured()) {
     </div>
     </main>
     <?php
-        // Render admin-configurable footer HTML (may contain basic markup)
-        $footer_html = get_setting('footer_html', '');
-        if (!empty($footer_html)) {
-            echo '<footer class="site-footer">' . $footer_html . '</footer>';
+        // Render admin-configured footer page (managed via Pages admin)
+        $pageFooter = get_setting('page_footer', '');
+        if (!empty($pageFooter)) {
+            echo '<footer class="site-footer">' . $pageFooter . '</footer>';
         }
     ?>
     
@@ -169,12 +169,18 @@ if (!isConfigured()) {
             var content = document.getElementById('lightboxContent');
             var closeBtn = document.getElementById('lightboxClose');
 
-            function openLightbox(src, alt){
+            function openLightbox(src, alt, caption){
                 content.innerHTML = '';
                 var img = document.createElement('img');
                 img.src = src;
                 img.alt = alt || '';
                 content.appendChild(img);
+                if (caption) {
+                    var cap = document.createElement('div');
+                    cap.className = 'lightbox-caption';
+                    cap.textContent = caption;
+                    content.appendChild(cap);
+                }
                 overlay.style.display = 'flex';
                 // small timeout to allow CSS transition
                 setTimeout(function(){ overlay.classList.add('open'); }, 10);
@@ -198,7 +204,11 @@ if (!isConfigured()) {
                 imgs.forEach(function(i){
                     i.style.cursor = 'zoom-in';
                     if (!i.__lightboxAttached) {
-                        i.addEventListener('click', function(e){ openLightbox(i.src, i.alt); });
+                        i.addEventListener('click', function(e){ 
+                            // Use the image title attribute as the caption per request
+                            var caption = i.title || '';
+                            openLightbox(i.src, i.alt, caption);
+                        });
                         i.__lightboxAttached = true;
                     }
                 });
