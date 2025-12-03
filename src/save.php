@@ -5,6 +5,7 @@
 require_once 'config.php';
 require_once 'service/storage.php';
 require_once __DIR__ . '/service/email_utils.php';
+require_once __DIR__ . '/service/settings.php';
 
 // Check if the form is submitted
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -116,6 +117,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         header('Content-Type: text/html; charset=utf-8');
         echo '<!doctype html><html><head><meta charset="utf-8"><title>Thank you</title>';
+        // Insert favicon link if configured
+        $fav = get_setting('favicon', '');
+        if (!empty($fav)) echo '<link rel="icon" href="' . htmlspecialchars($fav) . '">';
         echo '<meta http-equiv="refresh" content="5;url=' . htmlspecialchars($homeUrl) . '">';
         echo '<style>body{font-family:Arial,Helvetica,sans-serif;padding:24px;} .success{background:#e6ffed;border:1px solid #b7f0c9;padding:16px;border-radius:6px;} .note{margin-top:12px;color:#666}</style>';
         echo '</head><body>';

@@ -4,6 +4,7 @@ session_start();
 // Include configuration and service files
 require_once 'config.php';
 require_once 'service/installer.php';
+require_once __DIR__ . '/service/settings.php';
 
 $installer = new Installer();
 
@@ -63,6 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Memorial Website Installation</title>
     <link rel="stylesheet" href="styles/style.css">
     <link rel="stylesheet" href="styles/theme.css">
+    <?php
+        $favicon = get_setting('favicon', '');
+        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">';
+    ?>
     <style>
         .install-container {
             max-width: 600px;

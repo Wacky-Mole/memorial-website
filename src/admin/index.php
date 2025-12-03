@@ -12,6 +12,7 @@ include_once '../config.php';
 include_once '../service/navbar.php';
 
 require_once __DIR__ . '/../service/storage.php';
+require_once __DIR__ . '/../service/settings.php';
 
 // Compute app root prefix (same logic as navbar) so admin can build correct URLs
 $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
@@ -58,6 +59,10 @@ if ($filter === 'ALL') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+    <?php
+        $favicon = get_setting('favicon', '');
+        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">';
+    ?>
     <link rel="stylesheet" href="../styles/style.css">
 </head>
 <body>

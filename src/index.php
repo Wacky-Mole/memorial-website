@@ -22,6 +22,13 @@ if (!isConfigured()) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars(defined('SITE_TITLE') ? SITE_TITLE : SITE_NAME); ?></title>
     <link rel="stylesheet" href="styles/style.css">
+    <?php
+        // Output configured favicon if present
+        $favicon_path = get_setting('favicon', '');
+        if (!empty($favicon_path)) {
+            echo '<link rel="icon" href="' . htmlspecialchars($favicon_path) . '">';
+        }
+    ?>
 </head>
 <body>
     <?php renderNavbar(isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in']); ?>

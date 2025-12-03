@@ -5,6 +5,7 @@ session_start();
 require_once 'config.php';
 require_once 'service/navbar.php';
 require_once __DIR__ . '/service/upload_check.php';
+require_once __DIR__ . '/service/settings.php';
 
 // If admin is logged in, provide link to admin panel
 if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
@@ -54,6 +55,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles/style.css">
+    <?php
+        $favicon = get_setting('favicon', '');
+        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">';
+    ?>
     <title>Memorial Entry Form</title>
 </head>
 <body>

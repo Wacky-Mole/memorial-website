@@ -8,6 +8,7 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
 }
 
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../service/settings.php';
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -50,6 +51,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Admin Login</title>
     <link rel="stylesheet" href="../styles/style.css">
     <style> .login-box{max-width:420px;margin:40px auto;padding:18px;border:1px solid #ddd;border-radius:6px} .hint{font-size:0.9em;color:#666;margin-top:8px;} </style>
+    <?php
+        $favicon = get_setting('favicon', '');
+        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">';
+    ?>
 </head>
 <body>
     <div class="login-box">

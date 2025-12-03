@@ -27,6 +27,8 @@ $smtp_password = get_setting('smtp_password', defined('SMTP_PASSWORD') ? SMTP_PA
 $smtp_secure = get_setting('smtp_secure', defined('SMTP_SECURE') ? SMTP_SECURE : 'none');
 // Auto-approve new submissions (stored in DB settings)
 $auto_approve = (get_setting('auto_approve', '0') === '1');
+// Current favicon setting
+$current_favicon = get_setting('favicon', '');
 
 // Handle form submission: update memorial name and optional photo
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -192,6 +194,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Persist notification / SMTP settings to DB
     $notify_on_submission = isset($_POST['notify_on_submission']) ? '1' : '0';
     $auto_approve = isset($_POST['auto_approve']) ? '1' : '0';
+    // Favicon choice handling
+    $favicon_choice = $_POST['favicon_choice'] ?? '';
+    // If admin selected one of the preset choices
+    if ($favicon_choice === 'red_heart') {
+        set_setting('favicon', 'data/favicon/red_heart.svg');
+        $current_favicon = 'data/favicon/red_heart.svg';
+    } elseif ($favicon_choice === 'none') {
+        set_setting('favicon', '');
+        $current_favicon = '';
+    }
+
+    // Handle uploaded custom favicon if present
+    if (isset($_FILES['favicon_file']) && $_FILES['favicon_file']['error'] === UPLOAD_ERR_OK) {
+        $f = $_FILES['favicon_file'];
+        $allowed = ['image/svg+xml', 'image/png', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/jpeg'];
+        if (!in_array($f['type'], $allowed)) {
+            $error = 'Uploaded favicon must be an SVG, PNG, ICO, or JPG file.';
+        } else {
+            $baseDir = realpath(__DIR__ . '/..');
+            if ($baseDir === false) $baseDir = __DIR__ . '/..';
+            $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+            if ($ext === '') {
+                // try to infer from mime
+                $map = ['image/svg+xml'=>'svg','image/png'=>'png','image/x-icon'=>'ico','image/vnd.microsoft.icon'=>'ico','image/jpeg'=>'jpg'];
+                $ext = $map[$f['type']] ?? 'png';
+            }
+            $destDir = rtrim($baseDir, '/\\') . '/uploads/favicon';
+            if (!is_dir($destDir)) @mkdir($destDir, 0755, true);
+            $stableName = 'custom.' . $ext;
+            $destPath = $destDir . '/' . $stableName;
+            if (@move_uploaded_file($f['tmp_name'], $destPath)) {
+                @chmod($destPath, 0644);
+                $webPath = 'uploads/favicon/' . $stableName;
+                set_setting('favicon', $webPath);
+                $current_favicon = $webPath;
+            } else {
+                $error = 'Failed to move uploaded favicon.';
+            }
+        }
+    }
     $notify_email = filter_var(trim($_POST['notify_email'] ?? ''), FILTER_SANITIZE_EMAIL);
     $smtp_enabled = isset($_POST['smtp_enabled']) ? '1' : '0';
     $smtp_host = trim($_POST['smtp_host'] ?? '');
@@ -223,6 +265,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Settings</title>
     <link rel="stylesheet" href="../styles/style.css">
+    <?php
+        $favicon = get_setting('favicon', '');
+        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">';
+    ?>
 </head>
 <body>
     <h1>Admin Settings</h1>
@@ -283,6 +329,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <label for="notify_email">Notification Email:</label>
         <input type="email" id="notify_email" name="notify_email" value="<?php echo htmlspecialchars($notify_email); ?>">
+
+        <h3>Favicon</h3>
+        <p>Select a site favicon or upload your own. SVG/PNG/ICO recommended.</p>
+        <div>
+            <label>
+                <input type="radio" name="favicon_choice" value="none" <?php echo ($current_favicon === '') ? 'checked' : ''; ?>> No favicon
+            </label>
+            <label style="margin-left:12px;">
+                <input type="radio" name="favicon_choice" value="red_heart" <?php echo ($current_favicon === 'data/favicon/red_heart.svg') ? 'checked' : ''; ?>> Red heart
+            </label>
+        </div>
+        <div style="margin-top:8px;">
+            <label for="favicon_file">Upload custom favicon:</label>
+            <input type="file" id="favicon_file" name="favicon_file" accept="image/*,.svg,.png,.ico">
+        </div>
+        <div style="margin-top:8px;">
+            <strong>Current favicon preview:</strong>
+            <div style="margin-top:6px;">
+                <?php if (!empty($current_favicon)): ?>
+                    <img src="<?php echo htmlspecialchars($current_favicon); ?>" alt="favicon" style="width:32px;height:32px;vertical-align:middle;border:1px solid #ddd;padding:2px;background:#fff;">
+                <?php else: ?>
+                    <span style="color:#666;">(none)</span>
+                <?php endif; ?>
+            </div>
+        </div>
 
         <h3>SMTP Settings (optional)</h3>
         <label>

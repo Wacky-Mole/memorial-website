@@ -33,6 +33,10 @@ $current = get_setting('footer_html', '');
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Edit Footer</title>
     <link rel="stylesheet" href="../styles/style.css">
+    <?php
+        $favicon = get_setting('favicon', '');
+        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">';
+    ?>
     <style>
         .editor-toolbar button { margin-right:6px; }
         .editor-area { border:1px solid #ccc; padding:10px; min-height:80px; border-radius:4px; background:#fff; }
