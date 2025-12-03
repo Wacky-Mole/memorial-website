@@ -27,6 +27,44 @@ $smtp_secure = get_setting('smtp_secure', defined('SMTP_SECURE') ? SMTP_SECURE :
 
 // Handle form submission: update memorial name and optional photo
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Manual rotate action for existing stable image
+    if (isset($_POST['rotate_direction']) && in_array($_POST['rotate_direction'], ['left','right'])) {
+        $dir = $_POST['rotate_direction'];
+        $baseDir = realpath(__DIR__ . '/..');
+        if ($baseDir === false) $baseDir = __DIR__ . '/..';
+        $currentWeb = trim(MEMORIAL_PHOTO);
+        $fsPath = rtrim($baseDir, '/\\') . '/' . ltrim($currentWeb, '/\\');
+        if (!file_exists($fsPath)) {
+            $error = 'Cannot rotate: file not found: ' . htmlspecialchars($currentWeb);
+        } else {
+            // load
+            $ext = strtolower(pathinfo($fsPath, PATHINFO_EXTENSION));
+            $img = @imagecreatefromstring(file_get_contents($fsPath));
+            if ($img === false) {
+                $error = 'Failed to load image for rotation.';
+            } else {
+                $angle = ($dir === 'left') ? 90 : -90;
+                $rot = @imagerotate($img, $angle, 0);
+                if ($rot === false) {
+                    $error = 'Rotation failed.';
+                } else {
+                    // write back according to extension
+                    $saved = false;
+                    if (in_array($ext, ['png'])) $saved = imagepng($rot, $fsPath);
+                    elseif (in_array($ext, ['gif'])) $saved = imagegif($rot, $fsPath);
+                    else $saved = imagejpeg($rot, $fsPath, 90);
+                    imagedestroy($rot);
+                    imagedestroy($img);
+                    if ($saved) {
+                        @chmod($fsPath, 0644);
+                        $message = 'Image rotated ' . htmlspecialchars($dir) . '.';
+                    } else {
+                        $error = 'Failed to save rotated image.';
+                    }
+                }
+            }
+        }
+    }
     $memorial_name = trim($_POST['memorial_name'] ?? '');
 
     if (empty($memorial_name)) {
@@ -37,9 +75,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_FILES['memorial_photo']) && $_FILES['memorial_photo']['error'] === UPLOAD_ERR_OK) {
             require_once __DIR__ . '/../service/image_utils.php';
             list($ok, $result) = safeProcessUpload($_FILES['memorial_photo'], 'memorial', 1200, 1200);
+            // Log upload attempt for debugging
+            try {
+                $logdir = defined('DATA_DIR') ? DATA_DIR : __DIR__ . '/../data/';
+                if (!is_dir($logdir)) @mkdir($logdir, 0755, true);
+                $logfile = rtrim($logdir, '/\\') . '/upload_debug.log';
+                $entry = date('c') . " | upload attempt\n";
+                $entry .= "FILES: " . json_encode(array_intersect_key($_FILES['memorial_photo'], ['name'=>1,'type'=>1,'size'=>1,'error'=>1])) . "\n";
+                $entry .= "safeProcessUpload result: " . json_encode([$ok, $result]) . "\n\n";
+                @file_put_contents($logfile, $entry, FILE_APPEND);
+            } catch (Exception $e) {
+                // ignore logging errors
+            }
             if ($ok) {
-                // store path relative to site root
-                $photo_path = $result;
+                // store path relative to site root, but use a stable filename so config doesn't change on each upload
+                $uploadedWebPath = $result; // e.g. 'uploads/memorial/abcdef123.jpg'
+
+                // Compute filesystem paths based on project src dir
+                $baseDir = realpath(__DIR__ . '/..');
+                if ($baseDir === false) $baseDir = __DIR__ . '/..';
+                $uploadedFsPath = rtrim($baseDir, '/\\') . '/' . ltrim($uploadedWebPath, '/\\');
+
+                $ext = strtolower(pathinfo($uploadedFsPath, PATHINFO_EXTENSION));
+                if ($ext === '') $ext = 'jpg';
+                $stableWebPath = 'uploads/memorial/main.' . $ext;
+                $stableFsPath = rtrim($baseDir, '/\\') . '/' . $stableWebPath;
+
+                // Ensure target directory exists
+                $stableDir = dirname($stableFsPath);
+                if (!is_dir($stableDir)) mkdir($stableDir, 0755, true);
+
+                // Move the uploaded file into the stable filename (overwrite existing)
+                $moved = false;
+                if (file_exists($uploadedFsPath)) {
+                    // attempt to rename (fast), otherwise copy and unlink
+                    if (@rename($uploadedFsPath, $stableFsPath)) {
+                        $moved = true;
+                    } elseif (@copy($uploadedFsPath, $stableFsPath)) {
+                        @unlink($uploadedFsPath);
+                        $moved = true;
+                    }
+                } else {
+                    // Fallback: maybe the returned path is already the stable path or temp file not found
+                    // Try copying from web-relative location (not ideal) — attempt to copy using relative path
+                    $possibleSrc = __DIR__ . '/../' . ltrim($uploadedWebPath, '/\\');
+                    if (file_exists($possibleSrc) && (@copy($possibleSrc, $stableFsPath))) {
+                        $moved = true;
+                    }
+                }
+
+                if ($moved) {
+                    @chmod($stableFsPath, 0644);
+                    $photo_path = $stableWebPath;
+                } else {
+                    $error = 'Memorial photo upload succeeded but could not be moved to stable filename.';
+                }
             } else {
                 $error = 'Memorial photo upload failed: ' . htmlspecialchars($result);
             }
@@ -86,6 +176,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Write back
             if (file_put_contents($configFile, $cfg) === false) {
                 $error = 'Failed to write configuration file.';
+                // log write failure
+                if (defined('DATA_DIR')) @file_put_contents(DATA_DIR . 'upload_debug.log', date('c') . " | config write failed\n", FILE_APPEND);
             } else {
                 // reload config values in current request
                 require_once $configFile;
@@ -143,7 +235,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="text" id="memorial_name" name="memorial_name" value="<?php echo htmlspecialchars($memorial_name); ?>" required>
 
         <label for="memorial_photo">Memorial Photo (optional):</label>
-        <input type="file" id="memorial_photo" name="memorial_photo" accept="image/*">
+        <!-- AJAX upload form -->
+        <div id="upload-box">
+            <input type="file" id="memorial_photo" name="memorial_photo" accept="image/*">
+            <button type="button" id="upload-button">Upload Photo</button>
+            <div id="upload-progress" style="display:none; margin-top:8px;">
+                <div id="upload-progress-bar" style="width:0; height:10px; background:#4caf50;"></div>
+                <div id="upload-progress-text" style="margin-top:4px; font-size:90%; color:#555;"></div>
+            </div>
+            <div id="upload-message" style="margin-top:8px;"></div>
+        </div>
+
+        <div id="photo-preview" style="margin-top:12px;">
+            <strong>Current Photo Preview:</strong>
+            <div style="margin-top:8px;">
+                <img id="preview-image" src="<?php echo htmlspecialchars(MEMORIAL_PHOTO); ?>" alt="Preview" style="max-width:300px; border-radius:6px; display:block;">
+            </div>
+        </div>
+        <div style="margin-top:8px;">
+            <form id="rotate-left-form" method="post" style="display:inline-block; margin-right:8px;">
+                <input type="hidden" name="rotate_direction" value="left">
+                <button type="submit">Rotate Left</button>
+            </form>
+            <form id="rotate-right-form" method="post" style="display:inline-block;">
+                <input type="hidden" name="rotate_direction" value="right">
+                <button type="submit">Rotate Right</button>
+            </form>
+        </div>
 
         <h3>Notifications</h3>
         <label>
@@ -187,3 +305,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <a href="index.php">Back to Admin Dashboard</a>
 </body>
 </html>
+
+<script>
+// AJAX upload with progress and preview
+(function(){
+    var input = document.getElementById('memorial_photo');
+    var uploadBtn = document.getElementById('upload-button');
+    var progress = document.getElementById('upload-progress');
+    var bar = document.getElementById('upload-progress-bar');
+    var ptext = document.getElementById('upload-progress-text');
+    var msg = document.getElementById('upload-message');
+    var preview = document.getElementById('preview-image');
+
+    if (!input || !uploadBtn) return;
+
+    uploadBtn.addEventListener('click', function(){
+        msg.textContent = '';
+        if (!input.files || input.files.length === 0) { msg.textContent = 'Please select a file first.'; return; }
+        var file = input.files[0];
+        var form = new FormData();
+        form.append('memorial_photo', file);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'upload_photo.php', true);
+        xhr.responseType = 'json';
+
+        xhr.upload.onprogress = function(e){
+            if (e.lengthComputable) {
+                var pct = Math.round((e.loaded / e.total) * 100);
+                progress.style.display = 'block';
+                bar.style.width = pct + '%';
+                ptext.textContent = pct + '% uploaded';
+            }
+        };
+
+        xhr.onload = function(){
+            progress.style.display = 'none';
+            bar.style.width = '0%';
+            ptext.textContent = '';
+            var res = xhr.response;
+            if (!res && xhr.responseText) {
+                try { res = JSON.parse(xhr.responseText); } catch (e) { /* ignore */ }
+            }
+            if (!res) {
+                msg.textContent = 'Upload failed (no response).';
+                return;
+            }
+            if (res.ok) {
+                msg.style.color = 'green';
+                msg.textContent = res.message || 'Upload complete';
+                // Compute a site-root-aware base URL so path resolves correctly from /admin/
+                var basePath = window.location.pathname.replace(/\/admin\/.*$/, '/');
+                if (!basePath) basePath = '/';
+                // Ensure basePath ends with '/'
+                if (basePath.slice(-1) !== '/') basePath += '/';
+                // Remove any leading slash from response path to avoid '//' in URL
+                var respPath = (res.path || '').replace(/^\/+/, '');
+                var newPath = basePath + respPath + '?v=' + Date.now();
+                preview.src = newPath;
+            } else {
+                msg.style.color = 'red';
+                msg.textContent = res.message || 'Upload failed';
+            }
+        };
+
+        xhr.onerror = function(){
+            progress.style.display = 'none';
+            msg.style.color = 'red';
+            msg.textContent = 'Upload failed (network error).';
+        };
+
+        xhr.send(form);
+    });
+
+    // Optional: intercept rotation forms to rotate via AJAX and update preview
+    var rotateLeft = document.getElementById('rotate-left-form');
+    var rotateRight = document.getElementById('rotate-right-form');
+    function ajaxRotate(form){
+        var data = new FormData(form);
+        fetch('settings.php', { method: 'POST', body: data }).then(function(resp){
+            // reload preview image to show rotated result
+            preview.src = preview.src.split('?')[0] + '?v=' + Date.now();
+            return resp.text();
+        }).catch(function(){ /* ignore */ });
+    }
+    if (rotateLeft) rotateLeft.addEventListener('submit', function(e){ e.preventDefault(); ajaxRotate(this); });
+    if (rotateRight) rotateRight.addEventListener('submit', function(e){ e.preventDefault(); ajaxRotate(this); });
+})();
+</script>

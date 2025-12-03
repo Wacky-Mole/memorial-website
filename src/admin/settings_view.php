@@ -40,6 +40,68 @@ $error = '';
         } else {
             $error = 'Test email failed — check SMTP settings and server logs.';
         }
+    }
+    // Convert plaintext admin password to hash in config.php
+    elseif (isset($_POST['action']) && $_POST['action'] === 'convert_password') {
+        $configFile = __DIR__ . '/../config.php';
+        if (!file_exists($configFile)) {
+            $error = 'Configuration file not found.';
+        } else {
+            // Ensure ADMIN_PASSWORD_PLAIN exists in runtime
+            if (!defined('ADMIN_PASSWORD_PLAIN') || constant('ADMIN_PASSWORD_PLAIN') === '') {
+                $error = 'No plaintext admin password defined in config.php.';
+            } else {
+                $plain = constant('ADMIN_PASSWORD_PLAIN');
+                $hash = password_hash($plain, PASSWORD_DEFAULT);
+                if ($hash === false) {
+                    $error = 'Failed to generate password hash.';
+                } else {
+                    $cfg = file_get_contents($configFile);
+                    if ($cfg === false) {
+                        $error = 'Failed to read config.php.';
+                    } else {
+                        // Remove the ADMIN_PASSWORD_PLAIN line
+                        $pattern = "/define\(\s*'ADMIN_PASSWORD_PLAIN'\s*,[^;]+;?/";
+                        $new = preg_replace($pattern, '', $cfg, 1);
+                        if ($new === null) {
+                            $error = 'Failed to process config.php.';
+                        } else {
+                            // Insert hashed define after opening PHP tag
+                            $insert = "\n// Admin password hash (converted via admin UI)\ndefine('ADMIN_PASSWORD_HASH', " . var_export($hash, true) . ");\n";
+                            if (preg_match('/<\?php\s*/', $new, $m, PREG_OFFSET_CAPTURE)) {
+                                $pos = strpos($new, "\n", $m[0][1]);
+                                if ($pos !== false) {
+                                    $new = substr_replace($new, $insert, $pos + 1, 0);
+                                } else {
+                                    $new = $insert . $new;
+                                }
+                            } else {
+                                $new = $insert . $new;
+                            }
+
+                            // Write atomically
+                            $tmp = $configFile . '.tmp';
+                            if (file_put_contents($tmp, $new) === false) {
+                                $error = 'Failed to write temporary config file.';
+                            } elseif (!rename($tmp, $configFile)) {
+                                $error = 'Failed to install new config file.';
+                            } else {
+                                $message = 'Admin password converted to secure hash; plaintext removed from config.php.';
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // If AJAX, return JSON
+        $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+            || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            if ($error !== '') echo json_encode(['ok' => false, 'message' => $error]);
+            else echo json_encode(['ok' => true, 'message' => $message]);
+            exit();
+        }
     } else {
     // Save posted settings
     $notify_on_submission = isset($_POST['notify_on_submission']) ? '1' : '0';
@@ -155,6 +217,54 @@ function val($k, $d = '') {
             <span id="test-result" style="margin-left:12px;"></span>
         </div>
     </form>
+
+    <h3>Convert Admin Password (one-click)</h3>
+    <p>If you have `ADMIN_PASSWORD_PLAIN` defined in `src/config.php`, this will convert it to a secure `ADMIN_PASSWORD_HASH` and remove the plaintext define. Use immediately and then verify login.</p>
+    <form id="convert-password-form" method="post" action="settings_view.php">
+        <input type="hidden" name="action" value="convert_password">
+        <div style="margin-top:12px;">
+            <button id="convert-password-button" type="submit">Convert Plain Password to Hash</button>
+            <span id="convert-result" style="margin-left:12px;"></span>
+        </div>
+    </form>
+
+    <script>
+    (function(){
+        var form = document.getElementById('convert-password-form');
+        var button = document.getElementById('convert-password-button');
+        var result = document.getElementById('convert-result');
+        if (!form) return;
+        form.addEventListener('submit', function(e){
+            if (!confirm('Convert stored plaintext admin password into a secure hash and remove the plaintext from config.php?')) {
+                e.preventDefault();
+                return;
+            }
+            e.preventDefault();
+            result.textContent = 'Converting...';
+            button.disabled = true;
+            var data = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: data,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            }).then(function(resp){ return resp.json(); }).then(function(json){
+                if (json && json.ok) {
+                    result.style.color = 'green';
+                    result.textContent = json.message || 'Converted.';
+                } else {
+                    result.style.color = 'red';
+                    result.textContent = (json && json.message) ? json.message : 'Conversion failed.';
+                }
+            }).catch(function(err){
+                result.style.color = 'red';
+                result.textContent = 'Request failed: ' + (err && err.message ? err.message : 'network error');
+            }).finally(function(){ button.disabled = false; });
+        });
+    })();
+    </script>
 
     <script>
     (function(){

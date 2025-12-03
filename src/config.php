@@ -14,12 +14,13 @@ define('ADMIN_EMAIL', 'admin@example.com');
 // Memorial-specific settings (can be updated via admin settings)
 // Name of the person being remembered
 if (!defined('MEMORIAL_NAME')) {
-	define('MEMORIAL_NAME', '');
+	define('MEMORIAL_NAME', 'Joe Shimer');
 }
 
 // Path to memorial photo (relative to site root)
 if (!defined('MEMORIAL_PHOTO')) {
-	define('MEMORIAL_PHOTO', '');
+	// Default memorial photo path. Updated to the most recent uploaded image.
+	define('MEMORIAL_PHOTO', 'uploads/memorial/2fd8c292fd56a8af.jpg');
 }
 
 // Site title (falls back to SITE_NAME or "In Memory of [NAME]")
@@ -36,6 +37,21 @@ if (!defined('TIMEZONE')) {
 	define('TIMEZONE', 'UTC');
 }
 date_default_timezone_set(TIMEZONE);
+
+// Backwards-compatible installer check used by index.php
+if (!function_exists('isConfigured')) {
+	function isConfigured(): bool {
+		// If a DB path exists and the file is present, consider configured
+		if (defined('DB_PATH') && !empty(DB_PATH) && file_exists(DB_PATH)) return true;
+		// Older installer created the DB at src/memorial.db (different path); check that too
+		$legacyDb = __DIR__ . '/memorial.db';
+		if (file_exists($legacyDb)) return true;
+			// If an admin password hash or a temporary plaintext password is defined, assume configured
+			if (defined('ADMIN_PASSWORD_HASH') && constant('ADMIN_PASSWORD_HASH') !== '') return true;
+			if (defined('ADMIN_PASSWORD_PLAIN') && constant('ADMIN_PASSWORD_PLAIN') !== '') return true;
+		return false;
+	}
+}
 
 // File upload settings
 define('UPLOAD_DIR', 'uploads/');
@@ -88,4 +104,9 @@ if (!defined('SMTP_PASSWORD')) {
 if (!defined('SMTP_SECURE')) {
 	define('SMTP_SECURE', 'none');
 }
-?>
+
+// Temporary admin plaintext password (only used as a fallback during recovery).
+// Set to 'admin' per your request. REMOVE this line after converting to a hashed password.
+if (!defined('ADMIN_PASSWORD_PLAIN')) {
+	define('ADMIN_PASSWORD_PLAIN', 'admin');
+}

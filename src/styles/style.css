@@ -61,3 +61,9 @@ footer {
     bottom: 0;
     width: 100%;
 }
+
+/* Upload preview and progress */
+#upload-box { display:flex; align-items:center; gap:8px; }
+#upload-progress { width: 100%; max-width:360px; }
+#upload-progress-bar { width:0; height:10px; background:#4caf50; border-radius:4px; transition:width .2s; }
+#photo-preview img { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
