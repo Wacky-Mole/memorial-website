@@ -53,4 +53,39 @@ if (!defined('DB_PATH')) {
 }
 define('MAX_FILE_SIZE', 4194304); // 4MB in bytes
 define('ALLOWED_FILE_TYPES', ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp']);
+
+// Notification settings (admin can enable/disable and set email)
+if (!defined('NOTIFY_ON_SUBMISSION')) {
+	define('NOTIFY_ON_SUBMISSION', false);
+}
+
+if (!defined('NOTIFY_EMAIL')) {
+	define('NOTIFY_EMAIL', ADMIN_EMAIL);
+}
+
+// SMTP settings (basic)
+if (!defined('SMTP_ENABLED')) {
+	define('SMTP_ENABLED', false);
+}
+
+if (!defined('SMTP_HOST')) {
+	define('SMTP_HOST', '');
+}
+
+if (!defined('SMTP_PORT')) {
+	define('SMTP_PORT', 25);
+}
+
+if (!defined('SMTP_USERNAME')) {
+	define('SMTP_USERNAME', '');
+}
+
+if (!defined('SMTP_PASSWORD')) {
+	define('SMTP_PASSWORD', '');
+}
+
+// 'none' | 'tls' | 'ssl'
+if (!defined('SMTP_SECURE')) {
+	define('SMTP_SECURE', 'none');
+}
 ?>

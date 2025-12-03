@@ -9,10 +9,21 @@ if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
 
 // Include configuration file
 require_once '../config.php';
+require_once __DIR__ . '/../service/settings.php';
 
 // Initialize variables for settings
 $memorial_name = MEMORIAL_NAME;
 $message = '';
+
+// Load notification/SMTP settings from DB (fallback to config.php defaults)
+$notify_on_submission = (get_setting('notify_on_submission', (defined('NOTIFY_ON_SUBMISSION') && NOTIFY_ON_SUBMISSION) ? '1' : '0') === '1');
+$notify_email = get_setting('notify_email', defined('NOTIFY_EMAIL') ? NOTIFY_EMAIL : ADMIN_EMAIL);
+$smtp_enabled = (get_setting('smtp_enabled', (defined('SMTP_ENABLED') && SMTP_ENABLED) ? '1' : '0') === '1');
+$smtp_host = get_setting('smtp_host', defined('SMTP_HOST') ? SMTP_HOST : '');
+$smtp_port = get_setting('smtp_port', defined('SMTP_PORT') ? SMTP_PORT : 25);
+$smtp_username = get_setting('smtp_username', defined('SMTP_USERNAME') ? SMTP_USERNAME : '');
+$smtp_password = get_setting('smtp_password', defined('SMTP_PASSWORD') ? SMTP_PASSWORD : '');
+$smtp_secure = get_setting('smtp_secure', defined('SMTP_SECURE') ? SMTP_SECURE : 'none');
 
 // Handle form submission: update memorial name and optional photo
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -82,6 +93,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+
+    // Persist notification / SMTP settings to DB
+    $notify_on_submission = isset($_POST['notify_on_submission']) ? '1' : '0';
+    $notify_email = filter_var(trim($_POST['notify_email'] ?? ''), FILTER_SANITIZE_EMAIL);
+    $smtp_enabled = isset($_POST['smtp_enabled']) ? '1' : '0';
+    $smtp_host = trim($_POST['smtp_host'] ?? '');
+    $smtp_port = intval($_POST['smtp_port'] ?? 25);
+    $smtp_username = trim($_POST['smtp_username'] ?? '');
+    $smtp_password = trim($_POST['smtp_password'] ?? '');
+    $smtp_secure = in_array($_POST['smtp_secure'] ?? 'none', ['none','tls','ssl']) ? $_POST['smtp_secure'] : 'none';
+
+    set_setting('notify_on_submission', $notify_on_submission);
+    set_setting('notify_email', $notify_email);
+    set_setting('smtp_enabled', $smtp_enabled);
+    set_setting('smtp_host', $smtp_host);
+    set_setting('smtp_port', (string)$smtp_port);
+    set_setting('smtp_username', $smtp_username);
+    set_setting('smtp_password', $smtp_password);
+    set_setting('smtp_secure', $smtp_secure);
+
+    // Refresh local variables for form display
+    $notify_on_submission = ($notify_on_submission === '1');
+    $smtp_enabled = ($smtp_enabled === '1');
 }
 ?>
 
@@ -110,6 +144,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <label for="memorial_photo">Memorial Photo (optional):</label>
         <input type="file" id="memorial_photo" name="memorial_photo" accept="image/*">
+
+        <h3>Notifications</h3>
+        <label>
+            <input type="checkbox" name="notify_on_submission" value="1" <?php echo $notify_on_submission ? 'checked' : ''; ?>>
+            Email admin on new submissions
+        </label>
+
+        <label for="notify_email">Notification Email:</label>
+        <input type="email" id="notify_email" name="notify_email" value="<?php echo htmlspecialchars($notify_email); ?>">
+
+        <h3>SMTP Settings (optional)</h3>
+        <label>
+            <input type="checkbox" name="smtp_enabled" value="1" <?php echo $smtp_enabled ? 'checked' : ''; ?>>
+            Use SMTP to send notification emails
+        </label>
+
+        <label for="smtp_host">SMTP Host:</label>
+        <input type="text" id="smtp_host" name="smtp_host" value="<?php echo htmlspecialchars($smtp_host); ?>">
+
+        <label for="smtp_port">SMTP Port:</label>
+        <input type="number" id="smtp_port" name="smtp_port" value="<?php echo htmlspecialchars($smtp_port); ?>">
+
+        <label for="smtp_username">SMTP Username:</label>
+        <input type="text" id="smtp_username" name="smtp_username" value="<?php echo htmlspecialchars($smtp_username); ?>">
+
+        <label for="smtp_password">SMTP Password:</label>
+        <input type="password" id="smtp_password" name="smtp_password" value="<?php echo htmlspecialchars($smtp_password); ?>">
+
+        <label for="smtp_secure">SMTP Secure:</label>
+        <select id="smtp_secure" name="smtp_secure">
+            <option value="none" <?php echo ($smtp_secure === 'none') ? 'selected' : ''; ?>>None</option>
+            <option value="tls" <?php echo ($smtp_secure === 'tls') ? 'selected' : ''; ?>>TLS (STARTTLS)</option>
+            <option value="ssl" <?php echo ($smtp_secure === 'ssl') ? 'selected' : ''; ?>>SSL</option>
+        </select>
 
         <div style="margin-top:12px;">
             <button type="submit">Save Settings</button>
