@@ -48,25 +48,13 @@ class Installer
 
     private function handlePhotoUpload(array $file): string|false
     {
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        $maxSize = 5 * 1024 * 1024; // 5MB
-
-        if (!in_array($file['type'], $allowedTypes)) {
-            return false;
+        // Use shared image_utils for validation, random filename and resizing
+        require_once __DIR__ . '/image_utils.php';
+        list($ok, $result) = safeProcessUpload($file, 'memorial', 1200, 1200);
+        if ($ok) {
+            // result is path like uploads/memorial/xxxxx.ext
+            return $result;
         }
-
-        if ($file['size'] > $maxSize) {
-            return false;
-        }
-
-        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $filename = 'memorial_photo.' . $extension;
-        $destination = self::UPLOAD_DIR . $filename;
-
-        if (move_uploaded_file($file['tmp_name'], $destination)) {
-            return 'images/memorial/' . $filename;
-        }
-
         return false;
     }
 
@@ -158,16 +146,13 @@ function promptInstallation() {
             return "Please fill in all fields and upload a valid photo.";
         }
 
-        // Process the uploaded photo
-        $uploadDir = __DIR__ . '/../images/';
-        $uploadFile = $uploadDir . basename($photo['name']);
-
-        if (move_uploaded_file($photo['tmp_name'], $uploadFile)) {
-            // Save the configuration or data as needed
-            // This is where you would typically save to a database or configuration file
+        // Process the uploaded photo using image_utils
+        require_once __DIR__ . '/image_utils.php';
+        list($ok, $result) = safeProcessUpload($photo, 'memorial', 1200, 1200);
+        if ($ok) {
             return "Installation successful! Memorial entry created for $deceasedName.";
         } else {
-            return "Failed to upload photo.";
+            return "Failed to upload photo: " . htmlspecialchars($result);
         }
     }
 

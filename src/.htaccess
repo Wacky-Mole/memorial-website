@@ -1,0 +1,30 @@
+# Disable directory listing
+Options -Indexes
+
+# Protect key files (config, DB, backups, dotfiles)
+<FilesMatch "^(config\.php|memorial\.db|memorial_entries\.log|\.env|composer\.json|composer\.lock)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Hide dotfiles and Git
+RedirectMatch 404 /\..*$
+
+# Prevent direct access to .git folders
+RedirectMatch 404 ^/(.git|.github)/.*$
+
+# Security headers (if mod_headers available)
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "DENY"
+  Header set X-XSS-Protection "1; mode=block"
+  Header set Referrer-Policy "same-origin"
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https:;"
+</IfModule>
+
+# Turn off server signature exposure (if allowed)
+ServerSignature Off

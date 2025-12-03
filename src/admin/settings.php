@@ -21,29 +21,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($memorial_name)) {
         $error = 'Please provide a memorial name.';
     } else {
-        // Handle photo upload
+        // Handle photo upload using safe processor (randomized filename, MIME check, resize)
         $photo_path = MEMORIAL_PHOTO;
         if (isset($_FILES['memorial_photo']) && $_FILES['memorial_photo']['error'] === UPLOAD_ERR_OK) {
-            $allowed = ALLOWED_FILE_TYPES ?? ['image/jpeg','image/png','image/gif'];
-            if (!in_array($_FILES['memorial_photo']['type'], $allowed)) {
-                $error = 'Invalid image type for memorial photo.';
-            } elseif ($_FILES['memorial_photo']['size'] > (MAX_FILE_SIZE ?? 2097152)) {
-                $error = 'Memorial photo exceeds maximum allowed size.';
+            require_once __DIR__ . '/../service/image_utils.php';
+            list($ok, $result) = safeProcessUpload($_FILES['memorial_photo'], 'memorial', 1200, 1200);
+            if ($ok) {
+                // store path relative to site root
+                $photo_path = $result;
             } else {
-                // Save uploaded file to upload dir
-                $uploadDir = rtrim(UPLOAD_DIR, '/') . '/memorial/';
-                if (!is_dir($uploadDir)) {
-                    mkdir($uploadDir, 0755, true);
-                }
-                $ext = pathinfo($_FILES['memorial_photo']['name'], PATHINFO_EXTENSION);
-                $filename = 'memorial_photo.' . $ext;
-                $dest = $uploadDir . $filename;
-                if (move_uploaded_file($_FILES['memorial_photo']['tmp_name'], $dest)) {
-                    // store path relative to site root
-                    $photo_path = $uploadDir . $filename;
-                } else {
-                    $error = 'Failed to save uploaded photo.';
-                }
+                $error = 'Memorial photo upload failed: ' . htmlspecialchars($result);
             }
         }
 

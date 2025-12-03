@@ -51,6 +51,6 @@ if (!is_dir(DATA_DIR)) {
 if (!defined('DB_PATH')) {
 	define('DB_PATH', DATA_DIR . 'memorial.db');
 }
-define('MAX_FILE_SIZE', 2097152); // 2MB in bytes
-define('ALLOWED_FILE_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
+define('MAX_FILE_SIZE', 4194304); // 4MB in bytes
+define('ALLOWED_FILE_TYPES', ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp']);
 ?>
