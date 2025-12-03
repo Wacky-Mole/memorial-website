@@ -10,6 +10,7 @@ if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
 // Include configuration file
 require_once '../config.php';
 require_once __DIR__ . '/../service/settings.php';
+require_once __DIR__ . '/../service/upload_check.php';
 
 // Initialize variables for settings
 $memorial_name = MEMORIAL_NAME;
@@ -244,6 +245,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div id="upload-progress-text" style="margin-top:4px; font-size:90%; color:#555;"></div>
             </div>
             <div id="upload-message" style="margin-top:8px;"></div>
+            <?php
+            // Warn if server PHP upload limits are lower than configured MAX_FILE_SIZE
+            $limits = serverUploadLimits();
+            if ($limits['effective_bytes'] > 0 && $limits['effective_bytes'] < MAX_FILE_SIZE) : ?>
+                <div style="margin-top:8px; padding:10px; border-radius:6px; background:#fff4e5; color:#6b3b00;">
+                    Warning: Server allows uploads up to <strong><?php echo htmlspecialchars($limits['effective_readable']); ?></strong> (upload_max_filesize=<?php echo htmlspecialchars($limits['upload_max_filesize']); ?>, post_max_size=<?php echo htmlspecialchars($limits['post_max_size']); ?>). Increase these in php.ini or reduce the configured max file size.
+                </div>
+            <?php endif; ?>
         </div>
 
         <div id="photo-preview" style="margin-top:12px;">

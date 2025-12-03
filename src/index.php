@@ -4,6 +4,7 @@ session_start();
 // Include configuration and necessary services
 require_once 'config.php';
 require_once 'service/navbar.php';
+require_once __DIR__ . '/service/storage.php';
 
 // Check if the installation is complete
 if (!isConfigured()) {
@@ -51,6 +52,89 @@ if (!isConfigured()) {
         ?>
         <p>Here you can honor and remember <?php echo htmlspecialchars(!empty(MEMORIAL_NAME) ? MEMORIAL_NAME : 'your loved one'); ?>.</p>
         <a href="form.php" class="btn">Add a Memorial Entry</a>
+
+        <section class="entries-section">
+            <h2>Memories</h2>
+            <?php
+                // Fetch approved entries
+                $entries = getApprovedEntries();
+
+                // Compute root prefix like navbar to build correct image URLs when served from a subdirectory
+                $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+                if ($scriptDir === '/' || $scriptDir === '.') $scriptDir = '';
+                $appRoot = $scriptDir;
+                if (substr($appRoot, -6) === '/admin') {
+                    $appRoot = rtrim(dirname($appRoot), '/\\');
+                }
+                $rootPrefix = ($appRoot === '' ? '' : $appRoot);
+
+                if (empty($entries)) {
+                    echo '<p style="color:#666;">No entries have been posted yet.</p>';
+                } else {
+                    echo '<div class="entries-grid">';
+                    foreach ($entries as $entry) {
+                        // Only show APPROVED entries
+                        if (($entry['status'] ?? '') !== 'APPROVED') continue;
+                        $message = trim($entry['message'] ?? '');
+                        $contributor = trim($entry['contributor'] ?? '');
+                        $photoField = trim($entry['photo'] ?? '');
+
+                        // Parse photos (JSON array of {path,caption}) or legacy single path
+                        $photos = [];
+                        if ($photoField !== '') {
+                            $trimmed = ltrim($photoField);
+                            if (strpos($trimmed, '[') === 0) {
+                                $decoded = json_decode($trimmed, true);
+                                if (is_array($decoded)) $photos = $decoded;
+                            } else {
+                                $photos = [['path' => $photoField, 'caption' => '']];
+                            }
+                        }
+
+                        echo '<article class="entry">';
+
+                        if (!empty($photos)) {
+                            echo '<div class="entry-photos">';
+                            foreach ($photos as $ph) {
+                                $p = $ph['path'] ?? '';
+                                $cap = $ph['caption'] ?? '';
+                                if (empty($p)) continue;
+                                // Build root-aware URL
+                                $rawPath = ltrim($p, '/');
+                                if (strpos($p, '/') === 0) {
+                                    $imgUrl = $p;
+                                } else {
+                                    $imgUrl = ($rootPrefix === '' ? '/' . $rawPath : $rootPrefix . '/' . $rawPath);
+                                }
+                                // Try to append filemtime as cache-bust
+                                $fsPath = __DIR__ . '/' . ltrim($p, '/\\');
+                                $cache = '';
+                                if (file_exists($fsPath)) { $mt = @filemtime($fsPath); if ($mt) $cache = '?v=' . $mt; }
+
+                                // Image with hover title of contributor
+                                $titleAttr = $contributor ? ('Submitted by: ' . $contributor) : '';
+                                echo '<figure class="entry-photo">';
+                                echo '<img src="' . htmlspecialchars($imgUrl . $cache) . '" alt="photo" title="' . htmlspecialchars($titleAttr) . '" loading="lazy">';
+                                if (!empty($cap)) echo '<figcaption class="entry-caption">' . htmlspecialchars($cap) . '</figcaption>';
+                                echo '</figure>';
+                            }
+                            echo '</div>'; // entry-photos
+                            // Show message and author beneath photo block
+                            echo '<div class="entry-message">' . nl2br(htmlspecialchars($message)) . '<div class="entry-author">— ' . htmlspecialchars($contributor) . '</div></div>';
+                        } else {
+                            // Message-only bubble
+                            echo '<div class="entry-bubble">';
+                            echo '<div class="entry-message">' . nl2br(htmlspecialchars($message)) . '</div>';
+                            echo '<div class="entry-author">— ' . htmlspecialchars($contributor) . '</div>';
+                            echo '</div>';
+                        }
+
+                        echo '</article>';
+                    }
+                    echo '</div>'; // entries-grid
+                }
+            ?>
+        </section>
     </div>
 </body>
 </html>

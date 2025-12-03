@@ -67,7 +67,7 @@ if (!is_dir(DATA_DIR)) {
 if (!defined('DB_PATH')) {
 	define('DB_PATH', DATA_DIR . 'memorial.db');
 }
-define('MAX_FILE_SIZE', 4194304); // 4MB in bytes
+define('MAX_FILE_SIZE', 7340032); // 7MB in bytes
 define('ALLOWED_FILE_TYPES', ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp']);
 
 // Notification settings (admin can enable/disable and set email)

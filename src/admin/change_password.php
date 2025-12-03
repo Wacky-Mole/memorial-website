@@ -49,37 +49,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $newHash = password_hash($new, PASSWORD_DEFAULT);
 
-                    // Remove any ADMIN_PASSWORD_PLAIN define if present
-                    $cfg = preg_replace("/define\(\s*'ADMIN_PASSWORD_PLAIN'\s*,[^;]+;?/", '', $cfg);
+                    // Remove any existing ADMIN_PASSWORD_PLAIN and ADMIN_PASSWORD_HASH definitions (robustly)
+                    // Match patterns like: define('ADMIN_PASSWORD_PLAIN', '...'); or define('ADMIN_PASSWORD_HASH', password_hash(...));
+                    $cfg = preg_replace("/define\\(\\s*'ADMIN_PASSWORD_PLAIN'\\s*,[^\\)]*\\)\\s*;\\s*/i", '', $cfg);
+                    $cfg = preg_replace("/define\\(\\s*'ADMIN_PASSWORD_HASH'\\s*,[^\\)]*\\)\\s*;\\s*/i", '', $cfg);
 
-                    if (preg_match("/define\(\s*'ADMIN_PASSWORD_HASH'\s*,[^;]+;\)/", $cfg)) {
-                        $cfg = preg_replace(
-                            "/define\(\s*'ADMIN_PASSWORD_HASH'\s*,[^;]+;\)/",
-                            "define('ADMIN_PASSWORD_HASH', " . var_export($newHash, true) . ");",
-                            $cfg
-                        );
-                    } else {
-                        // insert after opening <?php tag
-                        if (preg_match('/<\?php\s*/', $cfg, $m, PREG_OFFSET_CAPTURE)) {
-                            $pos = strpos($cfg, "\n", $m[0][1]);
-                            if ($pos !== false) {
-                                $insert = "\n// Admin password hash\ndefine('ADMIN_PASSWORD_HASH', " . var_export($newHash, true) . ");\n";
-                                $cfg = substr_replace($cfg, $insert, $pos + 1, 0);
-                            } else {
-                                $cfg = "// Admin password hash\ndefine('ADMIN_PASSWORD_HASH', " . var_export($newHash, true) . ");\n" . $cfg;
-                            }
+                    // Insert new literal hash after the opening <?php (or at top if not found)
+                    $insert = "\n// Admin password hash\ndefine('ADMIN_PASSWORD_HASH', " . var_export($newHash, true) . ");\n";
+                    if (preg_match('/<\\?php\\s*/i', $cfg, $m, PREG_OFFSET_CAPTURE)) {
+                        $pos = strpos($cfg, "\n", $m[0][1]);
+                        if ($pos !== false) {
+                            $cfg = substr_replace($cfg, $insert, $pos + 1, 0);
                         } else {
-                            $cfg = "// Admin password hash\ndefine('ADMIN_PASSWORD_HASH', " . var_export($newHash, true) . ");\n" . $cfg;
+                            $cfg = $insert . $cfg;
                         }
+                    } else {
+                        $cfg = $insert . $cfg;
                     }
 
                     $tmp = $configFile . '.tmp';
-                    if (file_put_contents($tmp, $cfg) === false || !rename($tmp, $configFile)) {
-                        $error = 'Failed to write new configuration file.';
+                    // Write with exclusive lock then atomically rename
+                    $written = file_put_contents($tmp, $cfg, LOCK_EX);
+                    if ($written === false || !@rename($tmp, $configFile)) {
+                        @unlink($tmp);
+                        $error = 'Failed to write new configuration file (check file permissions).';
                     } else {
+                        // Invalidate OPcache if present so new file is used by subsequent requests
+                        if (function_exists('opcache_invalidate')) {
+                            @opcache_invalidate($configFile, true);
+                        }
+
                         $message = 'Password changed successfully.';
-                        // reload constants in current request
-                        require_once $configFile;
+                        // Include (not require_once) the config so constants are available in this request
+                        include $configFile;
                     }
                 }
             }

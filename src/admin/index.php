@@ -13,6 +13,15 @@ include_once '../service/navbar.php';
 
 require_once __DIR__ . '/../service/storage.php';
 
+// Compute app root prefix (same logic as navbar) so admin can build correct URLs
+$scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+if ($scriptDir === '/' || $scriptDir === '.') $scriptDir = '';
+$appRoot = $scriptDir;
+if (substr($appRoot, -6) === '/admin') {
+    $appRoot = rtrim(dirname($appRoot), '/\\');
+}
+$rootPrefix = ($appRoot === '' ? '' : $appRoot);
+
 $message = '';
 // Handle moderation actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_POST['ids'])) {
@@ -93,14 +102,42 @@ if ($filter === 'ALL') {
                         if ($filter !== 'ALL' && $entry['status'] !== $filter) continue;
                     ?>
                         <tr>
-                            <td><input type="checkbox" name="ids[]" value="<?php echo intval($entry['_id']); ?>"></td>
+                            <td><input type="checkbox" name="ids[]" value="<?php echo intval($entry['id']); ?>"></td>
                             <td><?php echo htmlspecialchars($entry['email'] ?? ''); ?></td>
                             <td><?php echo htmlspecialchars($entry['contributor'] ?? ''); ?></td>
                             <td style="max-width:400px; white-space:normal;"><?php echo nl2br(htmlspecialchars($entry['message'] ?? '')); ?></td>
                             <td>
-                                <?php if (!empty($entry['photo'])): ?>
-                                    <img src="<?php echo htmlspecialchars($entry['photo']); ?>" alt="photo" width="100">
-                                <?php endif; ?>
+                                <?php if (!empty($entry['photo'])):
+                                    $photoField = $entry['photo'];
+                                    $photos = [];
+                                    // Detect JSON array (new format) or legacy string
+                                    $trimmed = trim($photoField);
+                                    if (strpos($trimmed, '[') === 0) {
+                                        $decoded = json_decode($trimmed, true);
+                                        if (is_array($decoded)) $photos = $decoded;
+                                    } else {
+                                        // legacy single path
+                                        $photos = [['path' => $photoField, 'caption' => '']];
+                                    }
+                                    foreach ($photos as $ph):
+                                        if (empty($ph['path'])) continue;
+                                        // Build a root-aware URL for the image
+                                        $rawPath = ltrim($ph['path'], '/');
+                                        if (strpos($ph['path'], '/') === 0) {
+                                            // already absolute from web root
+                                            $imgUrl = $ph['path'];
+                                        } else {
+                                            $imgUrl = ($rootPrefix === '' ? '/' . $rawPath : $rootPrefix . '/' . $rawPath);
+                                        }
+                                        ?>
+                                            <div style="margin-bottom:8px;">
+                                                <img src="<?php echo htmlspecialchars($imgUrl); ?>" alt="photo" width="120" style="display:block; margin-bottom:6px;">
+                                                <?php if (!empty($ph['caption'])): ?>
+                                                    <div style="font-size:90%; color:#333;"><?php echo htmlspecialchars($ph['caption']); ?></div>
+                                                <?php endif; ?>
+                                            </div>
+                                    <?php endforeach;
+                                endif; ?>
                             </td>
                             <td><?php echo htmlspecialchars($entry['created_at'] ?? ''); ?></td>
                             <td><?php echo htmlspecialchars($entry['status']); ?></td>
