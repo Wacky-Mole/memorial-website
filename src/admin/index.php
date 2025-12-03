@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
         }
     } elseif ($action === 'bin') {
         if (updateEntriesStatus($ids, 'BIN')) {
-            $message = 'Selected entries moved to bin.';
+            $message = 'Selected entries marked rejected.';
         }
     } elseif ($action === 'delete') {
         if (deleteEntries($ids)) {
@@ -77,9 +77,9 @@ if ($filter === 'ALL') {
         <?php endif; ?>
 
         <p>Filter: 
-            <a href="?status=NOT_APPROVED">Not approved</a> |
+            <a href="?status=NOT_APPROVED">Pending Approval</a> |
             <a href="?status=APPROVED">Approved</a> |
-            <a href="?status=BIN">Bin</a> |
+            <a href="?status=BIN">Rejected</a> |
             <a href="?status=ALL">All</a>
         </p>
 
@@ -145,7 +145,15 @@ if ($filter === 'ALL') {
                                 endif; ?>
                             </td>
                             <td><?php echo htmlspecialchars($entry['created_at'] ?? ''); ?></td>
-                            <td><?php echo htmlspecialchars($entry['status']); ?></td>
+                            <td>
+                                <?php
+                                $st = $entry['status'] ?? '';
+                                if ($st === 'NOT_APPROVED') echo 'Pending Approval';
+                                elseif ($st === 'APPROVED') echo 'Approved';
+                                elseif ($st === 'BIN') echo 'Rejected';
+                                else echo htmlspecialchars($st);
+                                ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -153,7 +161,7 @@ if ($filter === 'ALL') {
 
             <div style="margin-top:12px;">
                 <button type="submit" name="action" value="approve">Approve selected</button>
-                <button type="submit" name="action" value="bin">Move to bin</button>
+                <button type="submit" name="action" value="bin">Reject selected</button>
                 <button type="submit" name="action" value="delete" onclick="return confirm('Permanently delete selected entries?');">Delete selected</button>
             </div>
         </form>

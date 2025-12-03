@@ -12,6 +12,27 @@ header {
     text-align: center;
 }
 
+/* Navbar styling */
+.navbar { background: #ffffff; border-bottom: 1px solid #e6e6e6; }
+.nav-inner { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.nav-brand .nav-link { font-weight:700; color:#333; text-decoration:none; font-size:1.05rem; }
+.nav-list { list-style:none; margin:0; padding:6px 0; display:flex; gap:10px; align-items:center; }
+.nav-item { }
+.nav-link { color:#444; text-decoration:none; padding:8px 10px; border-radius:6px; display:inline-block; }
+.nav-link:hover { background:#f0f0f0; color:#111; }
+
+/* Mobile nav adjustments */
+@media (max-width:640px) {
+    .nav-inner { flex-direction:column; align-items:flex-start; padding:8px 12px; }
+    .nav-list { flex-wrap:wrap; }
+}
+
+/* Hero section: center person and photo */
+.hero { display:flex; align-items:center; justify-content:center; text-align:center; min-height:40vh; padding:40px 0; }
+.hero .container { display:flex; flex-direction:column; align-items:center; gap:18px; }
+.hero h1 { font-size:2.2rem; margin:0; }
+.hero p.lead { margin:0; color:#555; font-size:1rem; }
+
 h1 {
     margin: 0;
     font-size: 2.5em;
@@ -102,3 +123,11 @@ footer {
     .container { width:95%; }
     .entries-grid { grid-template-columns: 1fr; }
 }
+
+/* Buttons */
+.btn { display:inline-block; background:#35424a; color:#fff; padding:10px 16px; border-radius:6px; text-decoration:none; }
+.btn:hover { background:#2b3a40; }
+
+/* Footer link accent color for better contrast and visibility */
+.site-footer a { color: #ffd166; text-decoration: underline; }
+.site-footer a:hover { color: #ffffff; text-decoration: none; }

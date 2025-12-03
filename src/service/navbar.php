@@ -21,21 +21,22 @@ function renderNavbar($isAdmin = false) {
     $homeHref = ($rootPrefix === '' ? '/index.php' : $rootPrefix . '/index.php');
     $adminHrefBase = ($rootPrefix === '' ? '/admin' : $rootPrefix . '/admin');
 
-    echo '<nav>';
-    echo '<ul>';
-    echo '<li><a href="' . $homeHref . '">Home</a></li>';
-
+    echo '<nav class="navbar">';
+    echo '<div class="nav-inner container">';
+    // brand
+    echo '<div class="nav-brand"><a class="nav-link" href="' . $homeHref . '">' . htmlspecialchars(defined('SITE_TITLE') ? SITE_TITLE : SITE_NAME) . '</a></div>';
+    echo '<ul class="nav-list">';
     if ($isAdmin) {
-        echo '<li><a href="' . $adminHrefBase . '/index.php">Admin Dashboard</a></li>';
-        echo '<li><a href="' . $adminHrefBase . '/settings.php">Settings</a></li>';
-        echo '<li><a href="' . $adminHrefBase . '/footer.php">Footer</a></li>';
-        echo '<li><a href="' . $adminHrefBase . '/change_password.php">Change Password</a></li>';
-        echo '<li><a href="' . $adminHrefBase . '/logout.php">Logout</a></li>';
+        echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/index.php">Dashboard</a></li>';
+        echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/settings.php">Settings</a></li>';
+        echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/footer.php">Footer</a></li>';
+        echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/change_password.php">Change Password</a></li>';
+        echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/logout.php">Logout</a></li>';
     } else {
-        echo '<li><a href="' . ($rootPrefix === '' ? '/form.php' : $rootPrefix . '/form.php') . '">Submit Memorial</a></li>';
+        echo '<li class="nav-item"><a class="nav-link" href="' . ($rootPrefix === '' ? '/form.php' : $rootPrefix . '/form.php') . '">Submit Memorial</a></li>';
     }
-
     echo '</ul>';
+    echo '</div>'; // nav-inner
     echo '</nav>';
 }
 ?>
