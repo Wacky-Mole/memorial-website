@@ -49,7 +49,7 @@ if (!isConfigured()) {
                             $mtime = @filemtime($fsPath);
                             $cacheBust = $mtime ? ('?v=' . $mtime) : '';
                             echo '<div style="text-align:center; margin: 0;">';
-                            echo '<img src="' . htmlspecialchars($photoPath . $cacheBust) . '" alt="' . htmlspecialchars(MEMORIAL_NAME) . '" style="max-width:300px; border-radius:6px;" loading="lazy">';
+                            echo '<img class="lightbox-img" src="' . htmlspecialchars($photoPath . $cacheBust) . '" alt="' . htmlspecialchars(MEMORIAL_NAME) . '" style="max-width:300px; border-radius:6px; cursor:zoom-in;" loading="lazy">';
                             echo '</div>';
                         }
                     }
@@ -127,7 +127,7 @@ if (!isConfigured()) {
                                 // Image with hover title of contributor
                                 $titleAttr = $contributor ? ('Submitted by: ' . $contributor) : '';
                                 echo '<figure class="entry-photo">';
-                                echo '<img src="' . htmlspecialchars($imgUrl . $cache) . '" alt="photo" title="' . htmlspecialchars($titleAttr) . '" loading="lazy">';
+                                echo '<img class="lightbox-img" src="' . htmlspecialchars($imgUrl . $cache) . '" alt="photo" title="' . htmlspecialchars($titleAttr) . '" loading="lazy" style="cursor:zoom-in;">';
                                 if (!empty($cap)) echo '<figcaption class="entry-caption">' . htmlspecialchars($cap) . '</figcaption>';
                                 echo '</figure>';
                             }
@@ -157,5 +157,59 @@ if (!isConfigured()) {
             echo '<footer class="site-footer">' . $footer_html . '</footer>';
         }
     ?>
+    
+        <div id="lightboxOverlay" class="lightbox-overlay" role="dialog" aria-modal="true" style="display:none;">
+            <div class="lightbox-close" id="lightboxClose" title="Close">✕</div>
+            <div class="lightbox-content" id="lightboxContent"></div>
+        </div>
+
+        <script>
+        (function(){
+            var overlay = document.getElementById('lightboxOverlay');
+            var content = document.getElementById('lightboxContent');
+            var closeBtn = document.getElementById('lightboxClose');
+
+            function openLightbox(src, alt){
+                content.innerHTML = '';
+                var img = document.createElement('img');
+                img.src = src;
+                img.alt = alt || '';
+                content.appendChild(img);
+                overlay.style.display = 'flex';
+                // small timeout to allow CSS transition
+                setTimeout(function(){ overlay.classList.add('open'); }, 10);
+                document.addEventListener('keydown', onKey);
+            }
+
+            function closeLightbox(){
+                overlay.classList.remove('open');
+                document.removeEventListener('keydown', onKey);
+                setTimeout(function(){ overlay.style.display = 'none'; content.innerHTML = ''; }, 200);
+            }
+
+            function onKey(e){ if (e.key === 'Escape') closeLightbox(); }
+
+            closeBtn.addEventListener('click', closeLightbox);
+            overlay.addEventListener('click', function(e){ if (e.target === overlay) closeLightbox(); });
+
+            // Attach to all images with class lightbox-img
+            function attach(){
+                var imgs = document.querySelectorAll('img.lightbox-img');
+                imgs.forEach(function(i){
+                    i.style.cursor = 'zoom-in';
+                    if (!i.__lightboxAttached) {
+                        i.addEventListener('click', function(e){ openLightbox(i.src, i.alt); });
+                        i.__lightboxAttached = true;
+                    }
+                });
+            }
+
+            // initial attach
+            attach();
+            // in case images are added later, observe DOM
+            var obs = new MutationObserver(function(){ attach(); });
+            obs.observe(document.body, { childList:true, subtree:true });
+        })();
+        </script>
 </body>
 </html>
