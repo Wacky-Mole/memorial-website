@@ -28,6 +28,7 @@ function renderNavbar($isAdmin = false) {
     if ($isAdmin) {
         echo '<li><a href="' . $adminHrefBase . '/index.php">Admin Dashboard</a></li>';
         echo '<li><a href="' . $adminHrefBase . '/settings.php">Settings</a></li>';
+        echo '<li><a href="' . $adminHrefBase . '/footer.php">Footer</a></li>';
         echo '<li><a href="' . $adminHrefBase . '/change_password.php">Change Password</a></li>';
         echo '<li><a href="' . $adminHrefBase . '/logout.php">Logout</a></li>';
     } else {

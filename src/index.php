@@ -5,6 +5,7 @@ session_start();
 require_once 'config.php';
 require_once 'service/navbar.php';
 require_once __DIR__ . '/service/storage.php';
+require_once __DIR__ . '/service/settings.php';
 
 // Check if the installation is complete
 if (!isConfigured()) {
@@ -136,5 +137,12 @@ if (!isConfigured()) {
             ?>
         </section>
     </div>
+    <?php
+        // Render admin-configurable footer HTML (may contain basic markup)
+        $footer_html = get_setting('footer_html', '');
+        if (!empty($footer_html)) {
+            echo '<footer class="site-footer">' . $footer_html . '</footer>';
+        }
+    ?>
 </body>
 </html>
