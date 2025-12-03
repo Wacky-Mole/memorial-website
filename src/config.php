@@ -107,6 +107,9 @@ if (!defined('SMTP_SECURE')) {
 
 // Temporary admin plaintext password (only used as a fallback during recovery).
 // Set to 'admin' per your request. REMOVE this line after converting to a hashed password.
-if (!defined('ADMIN_PASSWORD_PLAIN')) {
-	define('ADMIN_PASSWORD_PLAIN', 'admin');
+// Define an admin password hash. By default the installer sets a safe hash for 'admin'.
+if (!defined('ADMIN_PASSWORD_HASH')) {
+	// Generate a password hash for the initial admin password 'admin'.
+	// This uses PHP's password_hash() at runtime; on first use you should change it via the admin UI.
+	define('ADMIN_PASSWORD_HASH', password_hash('admin', PASSWORD_DEFAULT));
 }

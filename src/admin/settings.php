@@ -249,18 +249,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div id="photo-preview" style="margin-top:12px;">
             <strong>Current Photo Preview:</strong>
             <div style="margin-top:8px;">
-                <img id="preview-image" src="<?php echo htmlspecialchars(MEMORIAL_PHOTO); ?>" alt="Preview" style="max-width:300px; border-radius:6px; display:block;">
+                <img id="preview-image" src="<?php echo htmlspecialchars(MEMORIAL_PHOTO); ?>" alt="Preview" style="max-width:300px; border-radius:6px; display:block;" data-webpath="<?php echo htmlspecialchars(MEMORIAL_PHOTO); ?>">
             </div>
         </div>
         <div style="margin-top:8px;">
-            <form id="rotate-left-form" method="post" style="display:inline-block; margin-right:8px;">
-                <input type="hidden" name="rotate_direction" value="left">
-                <button type="submit">Rotate Left</button>
-            </form>
-            <form id="rotate-right-form" method="post" style="display:inline-block;">
-                <input type="hidden" name="rotate_direction" value="right">
-                <button type="submit">Rotate Right</button>
-            </form>
+            <button type="button" id="rotate-left-button" data-dir="left" style="display:inline-block; margin-right:8px;">Rotate Left</button>
+            <button type="button" id="rotate-right-button" data-dir="right" style="display:inline-block;">Rotate Right</button>
         </div>
 
         <h3>Notifications</h3>
@@ -378,18 +372,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         xhr.send(form);
     });
 
-    // Optional: intercept rotation forms to rotate via AJAX and update preview
-    var rotateLeft = document.getElementById('rotate-left-form');
-    var rotateRight = document.getElementById('rotate-right-form');
-    function ajaxRotate(form){
-        var data = new FormData(form);
-        fetch('settings.php', { method: 'POST', body: data }).then(function(resp){
-            // reload preview image to show rotated result
-            preview.src = preview.src.split('?')[0] + '?v=' + Date.now();
-            return resp.text();
-        }).catch(function(){ /* ignore */ });
+    // Attach click handlers to rotate buttons to POST via fetch and update preview
+    function ajaxRotateDirection(dir){
+        var data = new FormData();
+        data.append('rotate_direction', dir);
+        fetch('settings.php', { method: 'POST', body: data, credentials: 'same-origin' })
+            .then(function(resp){
+                // Build a site-root-aware preview URL from the stored data-webpath
+                var basePath = window.location.pathname.replace(/\/admin\/.*$/, '/');
+                if (!basePath) basePath = '/';
+                if (basePath.slice(-1) !== '/') basePath += '/';
+                var respPath = (preview.dataset && preview.dataset.webpath) ? preview.dataset.webpath.replace(/^\/+/, '') : preview.src.split('?')[0].replace(/^\/+/, '');
+                var newPath = basePath + respPath + '?v=' + Date.now();
+                preview.src = newPath;
+                return resp.text();
+            }).catch(function(){ /* ignore */ });
     }
-    if (rotateLeft) rotateLeft.addEventListener('submit', function(e){ e.preventDefault(); ajaxRotate(this); });
-    if (rotateRight) rotateRight.addEventListener('submit', function(e){ e.preventDefault(); ajaxRotate(this); });
+
+    var btnLeft = document.getElementById('rotate-left-button');
+    var btnRight = document.getElementById('rotate-right-button');
+    if (btnLeft) btnLeft.addEventListener('click', function(e){ e.preventDefault(); ajaxRotateDirection('left'); });
+    if (btnRight) btnRight.addEventListener('click', function(e){ e.preventDefault(); ajaxRotateDirection('right'); });
 })();
 </script>
