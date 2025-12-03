@@ -1,5 +1,10 @@
 <?php
 function renderNavbar($isAdmin = false) {
+    // Load settings helper so we can show public page links only when content exists
+    $settingsFile = __DIR__ . '/settings.php';
+    if (file_exists($settingsFile)) {
+        require_once $settingsFile;
+    }
     // Build links relative to the current script to avoid 404s when app is served from a subdirectory
     $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
     if ($scriptDir === '/' || $scriptDir === '.') $scriptDir = '';
@@ -34,7 +39,16 @@ function renderNavbar($isAdmin = false) {
         echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/logout.php">Logout</a></li>';
     } else {
         echo '<li class="nav-item"><a class="nav-link" href="' . ($rootPrefix === '' ? '/form.php' : $rootPrefix . '/form.php') . '">Submit Memorial</a></li>';
-        echo '<li class="nav-item"><a class="nav-link" href="' . ($rootPrefix === '' ? '/about.php' : $rootPrefix . '/about.php') . '">About</a></li>';
+        // Show About link only if content exists
+        $aboutContent = function_exists('get_setting') ? get_setting('page_about', '') : '';
+        if (!empty($aboutContent)) {
+            echo '<li class="nav-item"><a class="nav-link" href="' . ($rootPrefix === '' ? '/about.php' : $rootPrefix . '/about.php') . '">About</a></li>';
+        }
+        // Show Memorial Details link only if content exists
+        $mdContent = function_exists('get_setting') ? get_setting('page_memorial_details', '') : '';
+        if (!empty($mdContent)) {
+            echo '<li class="nav-item"><a class="nav-link" href="' . ($rootPrefix === '' ? '/memorial_details.php' : $rootPrefix . '/memorial_details.php') . '">Memorial Details</a></li>';
+        }
     }
     echo '</ul>';
     echo '</div>'; // nav-inner
