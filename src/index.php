@@ -142,6 +142,23 @@ if (!isConfigured()) {
                             echo '</div>';
                         }
 
+                        // Heart button (show count and current state by checking hearts_count and per-IP lookup)
+                        $heartCount = isset($entry['hearts_count']) ? intval($entry['hearts_count']) : 0;
+                        $userIp = $_SERVER['REMOTE_ADDR'] ?? '';
+                        $userHearted = false;
+                        try {
+                            $pdo_for_hearts = getPDO();
+                            $qh = $pdo_for_hearts->prepare('SELECT id FROM hearts WHERE entry_id = :eid AND ip = :ip LIMIT 1');
+                            $qh->execute([':eid' => $entry['id'], ':ip' => $userIp]);
+                            if ($qh->fetch(PDO::FETCH_ASSOC)) $userHearted = true;
+                        } catch (Exception $e) { /* ignore */ }
+
+                        echo '<div class="entry-actions">';
+                        echo '<button class="heart-btn' . ($userHearted ? ' hearted' : '') . '" data-entry-id="' . intval($entry['id']) . '" data-hearted="' . ($userHearted ? 'true' : 'false') . '">';
+                        echo '❤ <span class="heart-count">' . $heartCount . '</span>';
+                        echo '</button>';
+                        echo '</div>';
+
                         echo '</article>';
                     }
                     echo '</div>'; // entries-grid
@@ -219,6 +236,47 @@ if (!isConfigured()) {
             // in case images are added later, observe DOM
             var obs = new MutationObserver(function(){ attach(); });
             obs.observe(document.body, { childList:true, subtree:true });
+            // Heart button handling: toggle via AJAX POST to heart.php
+            function initHearts(){
+                document.querySelectorAll('.heart-btn').forEach(function(btn){
+                    if (btn.__heartAttached) return;
+                    btn.__heartAttached = true;
+                    btn.addEventListener('click', function(){
+                        var id = btn.getAttribute('data-entry-id');
+                        var countEl = btn.querySelector('.heart-count');
+                        // immediate micro-interaction: pop animation
+                        btn.classList.remove('popping');
+                        // trigger reflow to restart animation
+                        // eslint-disable-next-line no-unused-expressions
+                        void btn.offsetWidth;
+                        btn.classList.add('popping');
+                        countEl.classList.remove('pulse');
+                        void countEl.offsetWidth;
+                        countEl.classList.add('pulse');
+
+                        var form = new FormData();
+                        form.append('entry_id', id);
+                        fetch('heart.php', { method: 'POST', body: form }).then(function(resp){
+                            return resp.json();
+                        }).then(function(json){
+                            if (json && json.ok) {
+                                countEl.textContent = json.count;
+                                btn.setAttribute('data-hearted', json.hearted ? 'true' : 'false');
+                                if (json.hearted) btn.classList.add('hearted'); else btn.classList.remove('hearted');
+                            } else {
+                                alert('Unable to toggle heart');
+                            }
+                        }).catch(function(){ alert('Network error'); })
+                        .finally(function(){
+                            // cleanup animation classes after finished
+                            setTimeout(function(){ btn.classList.remove('popping'); countEl.classList.remove('pulse'); }, 420);
+                        });
+                    });
+                });
+            }
+            initHearts();
+            var obs2 = new MutationObserver(function(){ initHearts(); });
+            obs2.observe(document.body, { childList:true, subtree:true });
         })();
         </script>
 </body>

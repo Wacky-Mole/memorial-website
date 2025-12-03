@@ -150,3 +150,27 @@ footer {
 .lightbox-content img { max-width: 100%; max-height: calc(85vh - 60px); width: auto; height: auto; border-radius: 6px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
 .lightbox-caption { color:#ddd; font-size:0.95rem; text-align:center; max-width:90%; }
 .lightbox-close { position: absolute; top: 18px; right: 18px; color: #fff; background: rgba(0,0,0,0.4); border-radius: 6px; padding:6px 8px; cursor:pointer; font-size:18px; }
+
+/* Heart button */
+.entry-actions { margin-top:8px; }
+.heart-btn { background: transparent; border: none; color: #888; font-size: 1rem; cursor: pointer; padding:6px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:8px; }
+.heart-btn:hover { background:#f6f6f6; color:#c0392b; }
+.heart-btn.hearted { color: #c0392b; font-weight:700; }
+.heart-count { font-weight:600; margin-left:6px; }
+
+/* Pop animation when heart toggles */
+.heart-btn.popping { animation: heart-pop 280ms cubic-bezier(.2,.8,.2,1); }
+.heart-count.pulse { animation: count-pulse 360ms cubic-bezier(.2,.8,.2,1); display:inline-block; }
+
+@keyframes heart-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.35); }
+    65% { transform: scale(0.95); }
+ 100% { transform: scale(1); }
+}
+
+@keyframes count-pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.25); opacity: 0.95; }
+ 100% { transform: scale(1); opacity: 1; }
+}

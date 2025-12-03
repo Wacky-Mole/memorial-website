@@ -119,6 +119,15 @@ class Installer
                 )
             ");
 
+            // Create hearts table for tracking hearts per entry by IP
+            $db->exec("CREATE TABLE IF NOT EXISTS hearts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entry_id INTEGER NOT NULL,
+                ip TEXT NOT NULL,
+                created_at TEXT,
+                UNIQUE(entry_id, ip)
+            )");
+
             // Insert initial settings
             $stmt = $db->prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
             $stmt->execute(['memorial_name', $data['memorial_name']]);

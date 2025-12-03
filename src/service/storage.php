@@ -30,6 +30,15 @@ function getPDO() {
         ip TEXT
     )");
 
+    // Ensure hearts table exists to track per-entry hearts by IP
+    $pdo->exec("CREATE TABLE IF NOT EXISTS hearts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        entry_id INTEGER NOT NULL,
+        ip TEXT NOT NULL,
+        created_at TEXT,
+        UNIQUE(entry_id, ip)
+    )");
+
     return $pdo;
 }
 
@@ -70,11 +79,14 @@ function saveMemorialEntry($email, $contributorName, $message, $photoPath = '') 
 
 function getEntries($status = null) {
     $pdo = getPDO();
+    // Include hearts_count computed from hearts table for each entry
     if ($status === null) {
-        $stmt = $pdo->query("SELECT * FROM entries ORDER BY datetime(created_at) DESC");
+        $sql = "SELECT e.*, COALESCE(h.cnt,0) AS hearts_count FROM entries e LEFT JOIN (SELECT entry_id, COUNT(*) AS cnt FROM hearts GROUP BY entry_id) h ON h.entry_id = e.id ORDER BY datetime(e.created_at) DESC";
+        $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } else {
-        $stmt = $pdo->prepare("SELECT * FROM entries WHERE status = :status ORDER BY datetime(created_at) DESC");
+        $sql = "SELECT e.*, COALESCE(h.cnt,0) AS hearts_count FROM entries e LEFT JOIN (SELECT entry_id, COUNT(*) AS cnt FROM hearts GROUP BY entry_id) h ON h.entry_id = e.id WHERE e.status = :status ORDER BY datetime(e.created_at) DESC";
+        $stmt = $pdo->prepare($sql);
         $stmt->execute([':status' => $status]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
