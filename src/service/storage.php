@@ -36,6 +36,20 @@ function getPDO() {
 function saveMemorialEntry($email, $contributorName, $message, $photoPath = '') {
     try {
         $pdo = getPDO();
+
+        // Determine initial status: if admin enabled auto-approve in settings store, mark as APPROVED
+        $status = 'NOT_APPROVED';
+        try {
+            $s = $pdo->prepare("SELECT value FROM settings WHERE key = :k LIMIT 1");
+            $s->execute([':k' => 'auto_approve']);
+            $row = $s->fetch(PDO::FETCH_ASSOC);
+            if ($row && isset($row['value']) && $row['value'] === '1') {
+                $status = 'APPROVED';
+            }
+        } catch (Exception $e) {
+            // settings table might not exist yet; default to NOT_APPROVED
+        }
+
         $stmt = $pdo->prepare("INSERT INTO entries (memorial,email,contributor,message,photo,created_at,status,ip) VALUES (:memorial,:email,:contributor,:message,:photo,:created_at,:status,:ip)");
         $stmt->execute([
             ':memorial' => defined('MEMORIAL_NAME') ? MEMORIAL_NAME : '',
@@ -44,7 +58,7 @@ function saveMemorialEntry($email, $contributorName, $message, $photoPath = '') 
             ':message' => $message,
             ':photo' => $photoPath,
             ':created_at' => date('Y-m-d H:i:s'),
-            ':status' => 'NOT_APPROVED',
+            ':status' => $status,
             ':ip' => $_SERVER['REMOTE_ADDR'] ?? ''
         ]);
         return true;

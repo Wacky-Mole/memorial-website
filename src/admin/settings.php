@@ -25,6 +25,8 @@ $smtp_port = get_setting('smtp_port', defined('SMTP_PORT') ? SMTP_PORT : 25);
 $smtp_username = get_setting('smtp_username', defined('SMTP_USERNAME') ? SMTP_USERNAME : '');
 $smtp_password = get_setting('smtp_password', defined('SMTP_PASSWORD') ? SMTP_PASSWORD : '');
 $smtp_secure = get_setting('smtp_secure', defined('SMTP_SECURE') ? SMTP_SECURE : 'none');
+// Auto-approve new submissions (stored in DB settings)
+$auto_approve = (get_setting('auto_approve', '0') === '1');
 
 // Handle form submission: update memorial name and optional photo
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -189,6 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Persist notification / SMTP settings to DB
     $notify_on_submission = isset($_POST['notify_on_submission']) ? '1' : '0';
+    $auto_approve = isset($_POST['auto_approve']) ? '1' : '0';
     $notify_email = filter_var(trim($_POST['notify_email'] ?? ''), FILTER_SANITIZE_EMAIL);
     $smtp_enabled = isset($_POST['smtp_enabled']) ? '1' : '0';
     $smtp_host = trim($_POST['smtp_host'] ?? '');
@@ -198,6 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $smtp_secure = in_array($_POST['smtp_secure'] ?? 'none', ['none','tls','ssl']) ? $_POST['smtp_secure'] : 'none';
 
     set_setting('notify_on_submission', $notify_on_submission);
+    set_setting('auto_approve', $auto_approve);
     set_setting('notify_email', $notify_email);
     set_setting('smtp_enabled', $smtp_enabled);
     set_setting('smtp_host', $smtp_host);
@@ -270,6 +274,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label>
             <input type="checkbox" name="notify_on_submission" value="1" <?php echo $notify_on_submission ? 'checked' : ''; ?>>
             Email admin on new submissions
+        </label>
+
+        <label style="display:block; margin-top:8px;">
+            <input type="checkbox" name="auto_approve" value="1" <?php echo $auto_approve ? 'checked' : ''; ?>>
+            Automatically approve new submissions (visible immediately)
         </label>
 
         <label for="notify_email">Notification Email:</label>

@@ -105,6 +105,7 @@ $error = '';
     } else {
     // Save posted settings
     $notify_on_submission = isset($_POST['notify_on_submission']) ? '1' : '0';
+    $auto_approve = isset($_POST['auto_approve']) ? '1' : '0';
     $notify_email = filter_var(trim($_POST['notify_email'] ?? ''), FILTER_SANITIZE_EMAIL);
     $smtp_enabled = isset($_POST['smtp_enabled']) ? '1' : '0';
     $smtp_host = trim($_POST['smtp_host'] ?? '');
@@ -115,6 +116,7 @@ $error = '';
 
     $ok = true;
     $ok = $ok && set_setting('notify_on_submission', $notify_on_submission);
+    $ok = $ok && set_setting('auto_approve', $auto_approve);
     $ok = $ok && set_setting('notify_email', $notify_email);
     $ok = $ok && set_setting('smtp_enabled', $smtp_enabled);
     $ok = $ok && set_setting('smtp_host', $smtp_host);
@@ -175,6 +177,10 @@ function val($k, $d = '') {
         <label>
             <input type="checkbox" name="notify_on_submission" value="1" <?php if (val('notify_on_submission','0') === '1') echo 'checked'; ?>>
             Notify on new submission
+        </label>
+        <br>
+        <label>
+            <input type="checkbox" name="auto_approve" value="1" <?php if (val('auto_approve','0') === '1') echo 'checked'; ?>> Auto-approve new submissions
         </label>
         <br>
         <label for="notify_email">Notification email:</label>
