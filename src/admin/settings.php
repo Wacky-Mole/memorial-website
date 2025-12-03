@@ -16,6 +16,11 @@ require_once __DIR__ . '/../service/upload_check.php';
 $memorial_name = MEMORIAL_NAME;
 $message = '';
 
+// Title prefix (e.g., "In Memory of") stored in settings
+$title_prefix = get_setting('title_prefix', 'In Memory of');
+// Title prefix position: 'before' or 'after' the memorial name
+$title_prefix_position = get_setting('title_prefix_position', 'before');
+
 // Load notification/SMTP settings from DB (fallback to config.php defaults)
 $notify_on_submission = (get_setting('notify_on_submission', (defined('NOTIFY_ON_SUBMISSION') && NOTIFY_ON_SUBMISSION) ? '1' : '0') === '1');
 $notify_email = get_setting('notify_email', defined('NOTIFY_EMAIL') ? NOTIFY_EMAIL : ADMIN_EMAIL);
@@ -168,14 +173,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Update SITE_TITLE if desired
+            // Use saved title prefix when updating SITE_TITLE
+            $savedPrefix = get_setting('title_prefix', 'In Memory of');
+            $titleText = $savedPrefix . ' ' . $memorial_name;
             if (preg_match("/define\(\'SITE_TITLE\',[^;]+;\)/", $cfg)) {
                 $cfg = preg_replace(
                     "/define\(\'SITE_TITLE\',[^;]+;\)/",
-                    "define('SITE_TITLE', 'In Memory of " . addslashes($memorial_name) . "');",
+                    "define('SITE_TITLE', '" . addslashes($titleText) . "');",
                     $cfg
                 );
             } else {
-                $cfg .= "\n// Site title\ndefine('SITE_TITLE', 'In Memory of " . addslashes($memorial_name) . "');\n";
+                $cfg .= "\n// Site title\ndefine('SITE_TITLE', '" . addslashes($titleText) . "');\n";
             }
 
             // Write back
@@ -244,6 +252,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     set_setting('notify_on_submission', $notify_on_submission);
     set_setting('auto_approve', $auto_approve);
+    // Save title prefix and position
+    $title_prefix_post = trim($_POST['title_prefix'] ?? '');
+    if ($title_prefix_post === '') $title_prefix_post = 'In Memory of';
+    set_setting('title_prefix', $title_prefix_post);
+    $title_prefix_position_post = in_array($_POST['title_prefix_position'] ?? 'before', ['before','after']) ? $_POST['title_prefix_position'] : 'before';
+    set_setting('title_prefix_position', $title_prefix_position_post);
     set_setting('notify_email', $notify_email);
     set_setting('smtp_enabled', $smtp_enabled);
     set_setting('smtp_host', $smtp_host);
@@ -284,6 +298,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form action="settings.php" method="post" enctype="multipart/form-data">
         <label for="memorial_name">Memorial Name:</label>
         <input type="text" id="memorial_name" name="memorial_name" value="<?php echo htmlspecialchars($memorial_name); ?>" required>
+
+        <label for="title_prefix">Title Prefix (e.g. "In Memory of"):</label>
+        <input type="text" id="title_prefix" name="title_prefix" value="<?php echo htmlspecialchars($title_prefix); ?>" placeholder="In Memory of">
+        <div style="margin-top:8px;">
+            <label>Title Prefix Position:</label>
+            <label style="margin-left:8px;"><input type="radio" name="title_prefix_position" value="before" <?php echo ($title_prefix_position === 'before') ? 'checked' : ''; ?>> Before name ("Prefix [NAME]")</label>
+            <label style="margin-left:8px;"><input type="radio" name="title_prefix_position" value="after" <?php echo ($title_prefix_position === 'after') ? 'checked' : ''; ?>> After name ("[NAME] Prefix")</label>
+        </div>
 
         <label for="memorial_photo">Memorial Photo (optional):</label>
         <!-- AJAX upload form -->

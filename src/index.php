@@ -20,7 +20,21 @@ if (!isConfigured()) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars(defined('SITE_TITLE') ? SITE_TITLE : SITE_NAME); ?></title>
+    <?php
+        // Allow admin-configured title prefix and position when available
+        $titlePrefix = function_exists('get_setting') ? get_setting('title_prefix', '') : '';
+        $titlePos = function_exists('get_setting') ? get_setting('title_prefix_position', 'before') : 'before';
+        if (!empty($titlePrefix) && !empty(MEMORIAL_NAME)) {
+            if ($titlePos === 'after') {
+                $displayTitle = MEMORIAL_NAME . ' ' . $titlePrefix;
+            } else {
+                $displayTitle = $titlePrefix . ' ' . MEMORIAL_NAME;
+            }
+        } else {
+            $displayTitle = defined('SITE_TITLE') ? SITE_TITLE : SITE_NAME;
+        }
+    ?>
+    <title><?php echo htmlspecialchars($displayTitle); ?></title>
     <link rel="stylesheet" href="styles/style.css">
     <?php
         // Output configured favicon if present
@@ -35,7 +49,7 @@ if (!isConfigured()) {
     <main>
         <section class="hero">
             <div class="container">
-                <h1><?php echo htmlspecialchars(defined('SITE_TITLE') ? SITE_TITLE : SITE_NAME); ?></h1>
+                <h1><?php echo htmlspecialchars($displayTitle); ?></h1>
                 <?php
                     // Show memorial photo only if the file actually exists on disk (avoid broken requests)
                     $photoPath = trim(MEMORIAL_PHOTO);
@@ -61,7 +75,7 @@ if (!isConfigured()) {
                     }
                 ?>
                 <p class="lead">Here you can honor and remember <?php echo htmlspecialchars(!empty(MEMORIAL_NAME) ? MEMORIAL_NAME : 'your loved one'); ?>.</p>
-                <a href="form.php" class="btn">Add a Memorial Entry</a>
+                <a href="form.php" class="btn">Add a Memorial/Photos Entry</a>
             </div>
         </section>
 
