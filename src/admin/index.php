@@ -92,6 +92,7 @@ if ($filter === 'ALL') {
                 <thead>
                     <tr>
                         <th></th>
+                        <th>Actions</th>
                         <th>Email</th>
                         <th>Contributor</th>
                         <th>Message</th>
@@ -107,7 +108,12 @@ if ($filter === 'ALL') {
                         if ($filter !== 'ALL' && $entry['status'] !== $filter) continue;
                     ?>
                         <tr>
-                            <td><input type="checkbox" name="ids[]" value="<?php echo intval($entry['id']); ?>"></td>
+                                <td><input type="checkbox" name="ids[]" value="<?php echo intval($entry['id']); ?>"></td>
+                                <td style="white-space:nowrap;">
+                                    <button type="button" class="admin-row-action" data-action="approve" data-id="<?php echo intval($entry['id']); ?>" style="margin-right:6px;">✅</button>
+                                    <button type="button" class="admin-row-action" data-action="bin" data-id="<?php echo intval($entry['id']); ?>" style="margin-right:6px;">🚫</button>
+                                    <button type="button" class="admin-row-action" data-action="delete" data-id="<?php echo intval($entry['id']); ?>" style="color:#900;">🗑</button>
+                                </td>
                             <td><?php echo htmlspecialchars($entry['email'] ?? ''); ?></td>
                             <td><?php echo htmlspecialchars($entry['contributor'] ?? ''); ?></td>
                             <td style="max-width:400px; white-space:normal;"><?php echo nl2br(htmlspecialchars($entry['message'] ?? '')); ?></td>
@@ -166,5 +172,34 @@ if ($filter === 'ALL') {
             </div>
         </form>
     </div>
+    <script>
+    (function(){
+        // Attach click handlers to per-row admin action buttons (Approve / Reject / Delete)
+        document.querySelectorAll('.admin-row-action').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                var id = this.getAttribute('data-id');
+                var action = this.getAttribute('data-action');
+                if (!id || !action) return;
+                if (action === 'delete' && !confirm('Permanently delete this entry?')) return;
+
+                var params = new URLSearchParams();
+                params.append('action', action);
+                params.append('ids[]', id);
+
+                fetch(window.location.pathname + window.location.search, {
+                    method: 'POST',
+                    body: params,
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(function(resp){
+                    // reload page to show updated list and message
+                    window.location.reload();
+                }).catch(function(){
+                    alert('Network error while performing action.');
+                });
+            });
+        });
+    })();
+    </script>
 </body>
 </html>
