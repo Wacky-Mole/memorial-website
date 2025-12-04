@@ -31,6 +31,26 @@ header {
 .hero { display:flex; align-items:center; justify-content:center; text-align:center; min-height:40vh; padding:40px 0; }
 .hero .container { display:flex; flex-direction:column; align-items:center; gap:18px; }
 .hero h1 { font-size:2.2rem; margin:0; }
+
+/* Hero grid: left - center - right */
+.hero-grid { display:flex; align-items:center; justify-content:center; gap:18px; width:100%; }
+.hero-side { width:18%; display:flex; flex-direction:column; gap:8px; align-items:center; }
+.hero-side-img { max-width:100%; max-height:160px; border-radius:8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor:pointer; }
+.hero-center { width:44%; display:flex; align-items:center; justify-content:center; }
+.hero-main { max-width:100%; max-height:260px; border-radius:8px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); cursor:zoom-in; }
+.hero-placeholder { display:inline-block;width:300px;height:180px;border-radius:6px;background:#f0f0f0;line-height:180px;color:#666; }
+
+@media (max-width:900px) {
+    .hero-grid { flex-direction:column; }
+    .hero-side { width:100%; flex-direction:row; justify-content:center; gap:10px; }
+    .hero-center { width:100%; }
+    .hero-main { max-height:220px; }
+}
+
+/* When there are no side images, limit main hero height to half the viewport */
+.hero-grid.hero-only .hero-main {
+    max-height:50vh;
+}
 .hero p.lead { margin:0; color:#555; font-size:1rem; }
 
 h1 {

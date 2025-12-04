@@ -27,9 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die('Please provide your name.');
     }
 
-    if (empty($message)) {
-        die('Please provide a memory or message.');
-    }
+    // (message validation moved below after processing uploaded photos)
 
     // Optional photo upload (contributors may add one)
     $photoPath = '';
@@ -85,6 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Store as JSON array of objects: [{path:..., caption:...}, ...]
         $photoPath = json_encode($entries);
+    }
+
+    // Require a message if no photos were successfully uploaded
+    if (empty($message) && empty($photoPaths)) {
+        die('Please provide a memory or message, or upload a photo.');
     }
 
     // Save entry via storage helper (returns true/false)

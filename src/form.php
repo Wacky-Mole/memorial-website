@@ -35,11 +35,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $name = trim($_POST["name"]);
     }
 
-    // Validate message
-    if (empty(trim($_POST["message"]))) {
-        $message_err = "Please enter your memory or message.";
+    // Validate message: allow empty message if a photo was uploaded
+    $postedMessage = trim($_POST["message"] ?? '');
+    $hasUploadedPhoto = false;
+    if (!empty($_FILES['photo'])) {
+        // multiple files input; check if any file has size > 0
+        foreach ($_FILES['photo']['size'] as $sz) {
+            if (intval($sz) > 0) { $hasUploadedPhoto = true; break; }
+        }
+    }
+
+    if ($postedMessage === '' && !$hasUploadedPhoto) {
+        $message_err = "Please enter your memory or message, or upload a photo.";
     } else {
-        $message = trim($_POST["message"]);
+        $message = $postedMessage;
     }
 
     // If valid, allow POST to save.php (form includes file upload now)

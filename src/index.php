@@ -51,28 +51,68 @@ if (!isConfigured()) {
             <div class="container">
                 <h1><?php echo htmlspecialchars($displayTitle); ?></h1>
                 <?php
-                    // Show memorial photo only if the file actually exists on disk (avoid broken requests)
+                    // Show memorial photo and optional hero side photos
                     $photoPath = trim(MEMORIAL_PHOTO);
                     $photoShown = false;
                     if (!empty($photoPath)) {
-                        // Build filesystem path relative to this script
                         $fsPath = __DIR__ . '/' . ltrim($photoPath, '/\\');
                         if (file_exists($fsPath)) {
                             $photoShown = true;
-                            // Append file modification time to bust caches and ensure latest orientation is used
-                            $mtime = @filemtime($fsPath);
-                            $cacheBust = $mtime ? ('?v=' . $mtime) : '';
-                            echo '<div style="text-align:center; margin: 0;">';
-                            echo '<img class="lightbox-img" src="' . htmlspecialchars($photoPath . $cacheBust) . '" alt="' . htmlspecialchars(MEMORIAL_NAME) . '" style="max-width:300px; border-radius:6px; cursor:zoom-in;" loading="lazy">';
-                            echo '</div>';
                         }
                     }
-                    if (!$photoShown) {
-                        // lightweight placeholder to avoid layout jump and show a stable UI
-                        echo '<div style="text-align:center; margin: 0; color:#666;">';
-                        echo '<div style="display:inline-block;width:200px;height:120px;border-radius:6px;background:#f0f0f0;line-height:120px;">No photo</div>';
-                        echo '</div>';
+
+                    // Load hero side images from settings (JSON)
+                    $heroLeft = function_exists('get_setting') ? json_decode(get_setting('hero_left','[]'), true) : [];
+                    $heroRight = function_exists('get_setting') ? json_decode(get_setting('hero_right','[]'), true) : [];
+
+                    $heroOnly = (empty($heroLeft) && empty($heroRight));
+                    echo '<div class="hero-grid' . ($heroOnly ? ' hero-only' : '') . '">';
+                    // Left column
+                    echo '<div class="hero-side hero-left">';
+                    if (!empty($heroLeft) && is_array($heroLeft)) {
+                        foreach ($heroLeft as $hl) {
+                            $p = $hl['path'] ?? '';
+                            $u = $hl['url'] ?? '';
+                            if (empty($p)) continue;
+                            $imgUrl = (strpos($p, '/') === 0) ? $p : ('/' . ltrim($p, '/'));
+                            $fs = __DIR__ . '/' . ltrim($p, '/\\');
+                            $cache = (file_exists($fs) ? ('?v=' . @filemtime($fs)) : '');
+                            if (!empty($u)) echo '<a href="' . htmlspecialchars($u) . '">';
+                            echo '<img src="' . htmlspecialchars($imgUrl . $cache) . '" alt="" class="hero-side-img">';
+                            if (!empty($u)) echo '</a>';
+                        }
                     }
+                    echo '</div>';
+
+                    // Center column (main photo)
+                    echo '<div class="hero-center">';
+                    if ($photoShown) {
+                        $mtime = @filemtime($fsPath);
+                        $cacheBust = $mtime ? ('?v=' . $mtime) : '';
+                        echo '<img class="lightbox-img hero-main" src="' . htmlspecialchars($photoPath . $cacheBust) . '" alt="' . htmlspecialchars(MEMORIAL_NAME) . '" loading="lazy">';
+                    } else {
+                        echo '<div class="hero-placeholder">No photo</div>';
+                    }
+                    echo '</div>';
+
+                    // Right column
+                    echo '<div class="hero-side hero-right">';
+                    if (!empty($heroRight) && is_array($heroRight)) {
+                        foreach ($heroRight as $hr) {
+                            $p = $hr['path'] ?? '';
+                            $u = $hr['url'] ?? '';
+                            if (empty($p)) continue;
+                            $imgUrl = (strpos($p, '/') === 0) ? $p : ('/' . ltrim($p, '/'));
+                            $fs = __DIR__ . '/' . ltrim($p, '/\\');
+                            $cache = (file_exists($fs) ? ('?v=' . @filemtime($fs)) : '');
+                            if (!empty($u)) echo '<a href="' . htmlspecialchars($u) . '">';
+                            echo '<img src="' . htmlspecialchars($imgUrl . $cache) . '" alt="" class="hero-side-img">';
+                            if (!empty($u)) echo '</a>';
+                        }
+                    }
+                    echo '</div>';
+
+                    echo '</div>'; // hero-grid
                 ?>
                 <p class="lead">Here you can honor and remember <?php echo htmlspecialchars(!empty(MEMORIAL_NAME) ? MEMORIAL_NAME : 'your loved one'); ?>.</p>
                 <a href="form.php" class="btn">Add a Memorial/Photos Entry</a>

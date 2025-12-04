@@ -1,4 +1,5 @@
 <?php
+// Toggle heart for an entry (POST form-data: entry_id)
 session_start();
 header('Content-Type: application/json');
 
@@ -20,41 +21,39 @@ if ($entryId <= 0) {
 $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 try {
     $pdo = getPDO();
+
     // Ensure entry exists
     $s = $pdo->prepare('SELECT id FROM entries WHERE id = :id LIMIT 1');
     $s->execute([':id' => $entryId]);
     $exists = $s->fetch(PDO::FETCH_ASSOC);
     if (!$exists) {
-        http_response_code(404);
         echo json_encode(['ok' => false, 'message' => 'Entry not found']);
         exit();
     }
 
-    // Check if this IP has already hearted this entry
-    $t = $pdo->prepare('SELECT id FROM hearts WHERE entry_id = :eid AND ip = :ip LIMIT 1');
-    $t->execute([':eid' => $entryId, ':ip' => $ip]);
-    $row = $t->fetch(PDO::FETCH_ASSOC);
-    if ($row) {
-        // unheart
-        $del = $pdo->prepare('DELETE FROM hearts WHERE id = :id');
-        $del->execute([':id' => $row['id']]);
+    // Check if this IP already hearted this entry
+    $check = $pdo->prepare('SELECT COUNT(*) FROM hearts WHERE entry_id = :eid AND ip = :ip');
+    $check->execute([':eid' => $entryId, ':ip' => $ip]);
+    $has = intval($check->fetchColumn());
+
+    if ($has > 0) {
+        // remove
+        $del = $pdo->prepare('DELETE FROM hearts WHERE entry_id = :eid AND ip = :ip');
+        $del->execute([':eid' => $entryId, ':ip' => $ip]);
         $hearted = false;
     } else {
-        // add heart
-        $ins = $pdo->prepare('INSERT OR IGNORE INTO hearts (entry_id, ip, created_at) VALUES (:eid, :ip, :ts)');
-        $ins->execute([':eid' => $entryId, ':ip' => $ip, ':ts' => date('Y-m-d H:i:s')]);
+        // insert
+        $ins = $pdo->prepare('INSERT INTO hearts (entry_id, ip, created_at) VALUES (:eid, :ip, CURRENT_TIMESTAMP)');
+        $ins->execute([':eid' => $entryId, ':ip' => $ip]);
         $hearted = true;
     }
 
-    // Return updated count
-    $c = $pdo->prepare('SELECT COUNT(*) AS cnt FROM hearts WHERE entry_id = :eid');
-    $c->execute([':eid' => $entryId]);
-    $cnt = (int)$c->fetch(PDO::FETCH_ASSOC)['cnt'];
+    $cnt = $pdo->prepare('SELECT COUNT(*) FROM hearts WHERE entry_id = :eid');
+    $cnt->execute([':eid' => $entryId]);
+    $newCount = intval($cnt->fetchColumn());
 
-    echo json_encode(['ok' => true, 'hearted' => $hearted, 'count' => $cnt]);
-    exit();
+    echo json_encode(['ok' => true, 'hearted' => $hearted, 'count' => $newCount]);
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'message' => 'Server error']);
-    exit();
+    error_log('heart.php error: ' . $e->getMessage());
+    echo json_encode(['ok' => false, 'message' => 'db_error']);
 }

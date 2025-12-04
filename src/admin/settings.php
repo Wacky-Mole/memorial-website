@@ -34,6 +34,9 @@ $smtp_secure = get_setting('smtp_secure', defined('SMTP_SECURE') ? SMTP_SECURE :
 $auto_approve = (get_setting('auto_approve', '0') === '1');
 // Current favicon setting
 $current_favicon = get_setting('favicon', '');
+// Hero side images (JSON arrays of {path, url})
+$hero_left = json_decode(get_setting('hero_left', '[]'), true) ?: [];
+$hero_right = json_decode(get_setting('hero_right', '[]'), true) ?: [];
 
 // Handle form submission: update memorial name and optional photo
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -266,6 +269,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     set_setting('smtp_password', $smtp_password);
     set_setting('smtp_secure', $smtp_secure);
 
+    // Handle hero side uploads (up to 2 per side). Inputs: hero_left_file_0, hero_left_url_0, hero_right_file_0, hero_right_url_0, etc.
+    $maxPerSide = 2;
+    $newLeft = [];
+    $newRight = [];
+    // Helper to process an uploaded file field name and return web path or empty
+    function processHeroUpload($fieldName) {
+        if (!isset($_FILES[$fieldName]) || $_FILES[$fieldName]['error'] !== UPLOAD_ERR_OK) return '';
+        require_once __DIR__ . '/../service/image_utils.php';
+        list($ok, $result) = safeProcessUpload($_FILES[$fieldName], 'hero', 1200, 1200);
+        if ($ok) return $result; // web path
+        return '';
+    }
+    for ($i = 0; $i < $maxPerSide; $i++) {
+        $fileField = 'hero_left_file_' . $i;
+        $urlField = 'hero_left_url_' . $i;
+        $uploaded = processHeroUpload($fileField);
+        $providedUrl = trim($_POST[$urlField] ?? '');
+        // If admin provided an existing path input (string) allow it (in case they want to reference an existing upload)
+        $existingPathField = 'hero_left_path_' . $i;
+        $existingPath = trim($_POST[$existingPathField] ?? '');
+        $pathToUse = $uploaded ?: $existingPath;
+        if ($pathToUse !== '') {
+            $newLeft[] = ['path' => $pathToUse, 'url' => $providedUrl];
+        }
+    }
+    for ($i = 0; $i < $maxPerSide; $i++) {
+        $fileField = 'hero_right_file_' . $i;
+        $urlField = 'hero_right_url_' . $i;
+        $uploaded = processHeroUpload($fileField);
+        $providedUrl = trim($_POST[$urlField] ?? '');
+        $existingPathField = 'hero_right_path_' . $i;
+        $existingPath = trim($_POST[$existingPathField] ?? '');
+        $pathToUse = $uploaded ?: $existingPath;
+        if ($pathToUse !== '') {
+            $newRight[] = ['path' => $pathToUse, 'url' => $providedUrl];
+        }
+    }
+    set_setting('hero_left', json_encode($newLeft));
+    set_setting('hero_right', json_encode($newRight));
+
     // Refresh local variables for form display
     $notify_on_submission = ($notify_on_submission === '1');
     $smtp_enabled = ($smtp_enabled === '1');
@@ -374,6 +417,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php else: ?>
                     <span style="color:#666;">(none)</span>
                 <?php endif; ?>
+            </div>
+        </div>
+
+        <h3>Hero Side Photos (left / right)</h3>
+        <p>You can upload up to 2 photos for the left side and 2 photos for the right side of the main hero image. Optionally add a link URL for each photo (clickable).</p>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:260px;">
+                <strong>Left side</strong>
+                <?php for ($i=0;$i<2;$i++):
+                    $existing = $hero_left[$i]['path'] ?? '';
+                    $existingUrl = $hero_left[$i]['url'] ?? '';
+                ?>
+                    <div style="margin-top:8px;padding:8px;border:1px solid #eee;border-radius:6px;background:#fafafa;">
+                        <label>Upload image (left <?php echo $i+1;?>):</label>
+                        <input type="file" name="hero_left_file_<?php echo $i;?>" accept="image/*">
+                        <div style="margin-top:6px;font-size:90%;color:#666;">Or use existing path:</div>
+                        <input type="text" name="hero_left_path_<?php echo $i;?>" value="<?php echo htmlspecialchars($existing); ?>" placeholder="e.g. uploads/hero/left1.jpg">
+                        <label style="display:block;margin-top:6px;">Link URL (optional):</label>
+                        <input type="text" name="hero_left_url_<?php echo $i;?>" value="<?php echo htmlspecialchars($existingUrl); ?>" placeholder="https://example.com">
+                    </div>
+                <?php endfor; ?>
+            </div>
+
+            <div style="flex:1;min-width:260px;">
+                <strong>Right side</strong>
+                <?php for ($i=0;$i<2;$i++):
+                    $existing = $hero_right[$i]['path'] ?? '';
+                    $existingUrl = $hero_right[$i]['url'] ?? '';
+                ?>
+                    <div style="margin-top:8px;padding:8px;border:1px solid #eee;border-radius:6px;background:#fafafa;">
+                        <label>Upload image (right <?php echo $i+1;?>):</label>
+                        <input type="file" name="hero_right_file_<?php echo $i;?>" accept="image/*">
+                        <div style="margin-top:6px;font-size:90%;color:#666;">Or use existing path:</div>
+                        <input type="text" name="hero_right_path_<?php echo $i;?>" value="<?php echo htmlspecialchars($existing); ?>" placeholder="e.g. uploads/hero/right1.jpg">
+                        <label style="display:block;margin-top:6px;">Link URL (optional):</label>
+                        <input type="text" name="hero_right_url_<?php echo $i;?>" value="<?php echo htmlspecialchars($existingUrl); ?>" placeholder="https://example.com">
+                    </div>
+                <?php endfor; ?>
             </div>
         </div>
 
