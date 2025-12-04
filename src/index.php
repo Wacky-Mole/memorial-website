@@ -6,6 +6,8 @@ require_once 'config.php';
 require_once 'service/navbar.php';
 require_once __DIR__ . '/service/storage.php';
 require_once __DIR__ . '/service/settings.php';
+// Helpers for video/media detection (is_direct_media)
+require_once __DIR__ . '/service/video_utils.php';
 
 // Check if the installation is complete
 if (!isConfigured()) {
@@ -223,13 +225,37 @@ if (!isConfigured()) {
                                         if (!empty($cap)) echo '<figcaption class="entry-caption">' . $captionEsc . '</figcaption>';
                                         echo '</div>';
                                     } else {
-                                        // Not allowed to embed yet — show a safe external link instead
-                                        $safeUrl = htmlspecialchars($videoUrlRaw);
-                                        echo '<div class="entry-video-link" style="padding:10px;border:1px solid #eee;border-radius:6px;background:#fafafa;">';
-                                        echo '<div style="font-size:95%;margin-bottom:6px;">Video link (click to open):</div>';
-                                        echo '<a href="' . $safeUrl . '" target="_blank" rel="noopener noreferrer">' . $safeUrl . '</a>';
-                                        if (!empty($cap)) echo '<div class="entry-caption" style="margin-top:6px;">' . $captionEsc . '</div>';
-                                        echo '</div>';
+                                        // Not allowed to embed yet — try to render a native <video> tag if the URL is a direct media resource
+                                        $safeUrl = $videoUrlRaw;
+                                        $isDirect = false;
+                                        try {
+                                            if (function_exists('is_direct_media')) {
+                                                $isDirect = is_direct_media($safeUrl, 'entry-' . intval($entry['id']));
+                                            }
+                                        } catch (Exception $e) { $isDirect = false; }
+
+                                        if ($isDirect) {
+                                            $poster = '';
+                                            $thumbPath = __DIR__ . '/data/video_thumbs/' . intval($entry['id']) . '.jpg';
+                                            if (file_exists($thumbPath)) {
+                                                $poster = ($rootPrefix === '' ? '/data/video_thumbs/' : $rootPrefix . '/data/video_thumbs/') . intval($entry['id']) . '.jpg';
+                                            }
+                                            echo '<div class="entry-video" style="max-width:100%;">';
+                                            echo '<video controls preload="metadata" style="width:100%; max-height:480px;"' . (!empty($poster) ? ' poster="' . htmlspecialchars($poster) . '"' : '') . '>';
+                                            echo '<source src="' . htmlspecialchars($safeUrl) . '">';
+                                            echo 'Your browser does not support the video element.';
+                                            echo '</video>';
+                                            if (!empty($cap)) echo '<figcaption class="entry-caption">' . $captionEsc . '</figcaption>';
+                                            echo '</div>';
+                                        } else {
+                                            // Fallback: show a safe external link when embedding is disabled and media is not directly playable
+                                            $safeOut = htmlspecialchars($safeUrl);
+                                            echo '<div class="entry-video-link" style="padding:10px;border:1px solid #eee;border-radius:6px;background:#fafafa;">';
+                                            echo '<div style="font-size:95%;margin-bottom:6px;">Video link (click to open):</div>';
+                                            echo '<a href="' . $safeOut . '" target="_blank" rel="noopener noreferrer">' . $safeOut . '</a>';
+                                            if (!empty($cap)) echo '<div class="entry-caption" style="margin-top:6px;">' . $captionEsc . '</div>';
+                                            echo '</div>';
+                                        }
                                     }
                                 } else {
                                     echo '<img class="lightbox-img" src="' . htmlspecialchars($imgUrl . $cache) . '" alt="photo" title="' . htmlspecialchars($titleAttr) . '" loading="lazy" style="cursor:zoom-in;">';

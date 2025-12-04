@@ -14,7 +14,7 @@ define('ADMIN_EMAIL', 'admin@example.com');
 // Memorial-specific settings (can be updated via admin settings)
 // Name of the person being remembered
 if (!defined('MEMORIAL_NAME')) {
-	define('MEMORIAL_NAME', 'Joe Shimer');
+	define('MEMORIAL_NAME', 'John Doe');
 }
 
 // Path to memorial photo (relative to site root)

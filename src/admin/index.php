@@ -95,7 +95,7 @@ if ($filter === 'ALL') {
             <!-- placeholder to keep same-origin for file uploads in settings if used -->
         </form>
 
-        <form method="post" action="index.php">
+        <form method="post" action="index.php?status=<?php echo urlencode($filter); ?>">
             <table border="1" cellpadding="6" cellspacing="0">
                 <thead>
                     <tr>
@@ -120,7 +120,8 @@ if ($filter === 'ALL') {
                                 <td style="white-space:nowrap;">
                                     <button type="button" class="admin-row-action" data-action="approve" data-id="<?php echo intval($entry['id']); ?>" style="margin-right:6px;">✅</button>
                                     <button type="button" class="admin-row-action" data-action="bin" data-id="<?php echo intval($entry['id']); ?>" style="margin-right:6px;">🚫</button>
-                                    <button type="button" class="admin-row-action" data-action="allow-embed" data-id="<?php echo intval($entry['id']); ?>" title="Allow embed for this entry" style="margin-right:6px;">📺</button>
+                                    <?php $embedState = isset($entry['embed_allowed']) && intval($entry['embed_allowed']) === 1 ? '1' : '0'; ?>
+                                    <button type="button" class="admin-row-action" data-action="toggle-embed" data-id="<?php echo intval($entry['id']); ?>" data-embed="<?php echo $embedState; ?>" title="Toggle embed for this entry" style="margin-right:6px;">📺</button>
                                     <button type="button" class="admin-row-action" data-action="delete" data-id="<?php echo intval($entry['id']); ?>" style="color:#900;">🗑</button>
                                 </td>
                             <td><?php echo htmlspecialchars($entry['email'] ?? ''); ?></td>
@@ -141,6 +142,36 @@ if ($filter === 'ALL') {
                                     }
                                     foreach ($photos as $ph):
                                         if (empty($ph['path'])) continue;
+                                        // If this photo item is actually a video, label it clearly for admins
+                                        if (!empty($ph['type']) && $ph['type'] === 'video') {
+                                            $videoUrl = $ph['path'];
+                                            // Try to show a cached thumbnail if available
+                                            $thumbWeb = '';
+                                            $thumbFs = __DIR__ . '/../data/video_thumbs/' . intval($entry['id']) . '.jpg';
+                                            if (file_exists($thumbFs)) {
+                                                $thumbWeb = ($rootPrefix === '' ? '/data/video_thumbs/' : $rootPrefix . '/data/video_thumbs/') . intval($entry['id']) . '.jpg';
+                                            }
+                                            ?>
+                                            <div style="margin-bottom:8px; padding:6px; border:1px solid #eee; border-radius:6px; background:#fff;">
+                                                <div style="font-weight:bold; margin-bottom:6px;">🎞️ Video</div>
+                                                <?php if (!empty($thumbWeb)): ?>
+                                                    <img src="<?php echo htmlspecialchars($thumbWeb); ?>" alt="video thumbnail" width="120" style="display:block; margin-bottom:6px;">
+                                                <?php else: ?>
+                                                    <div style="font-size:90%; color:#666; margin-bottom:6px;">No thumbnail available</div>
+                                                <?php endif; ?>
+                                                <a href="<?php echo htmlspecialchars($videoUrl); ?>" target="_blank" rel="noopener noreferrer">Open video</a>
+                                                <?php if (!empty($ph['caption'])): ?>
+                                                    <div style="font-size:90%; color:#333; margin-top:6px;"><?php echo htmlspecialchars($ph['caption']); ?></div>
+                                                <?php endif; ?>
+                                                <?php if (isset($entry['embed_allowed']) && intval($entry['embed_allowed']) === 1): ?>
+                                                    <div style="font-size:90%; color:green; margin-top:6px;">Embed allowed</div>
+                                                <?php else: ?>
+                                                    <div style="font-size:90%; color:#999; margin-top:6px;">Embed disabled</div>
+                                                <?php endif; ?>
+                                            </div>
+                                            <?php
+                                            continue;
+                                        }
                                         // Build a root-aware URL for the image
                                         $rawPath = ltrim($ph['path'], '/');
                                         if (strpos($ph['path'], '/') === 0) {
@@ -185,7 +216,7 @@ if ($filter === 'ALL') {
     </div>
     <script>
     (function(){
-        // Attach click handlers to per-row admin action buttons (Approve / Reject / Delete)
+        // Attach click handlers to per-row admin action buttons (Approve / Reject / Delete / Toggle Embed)
         document.querySelectorAll('.admin-row-action').forEach(function(btn){
             btn.addEventListener('click', function(){
                 var id = this.getAttribute('data-id');
@@ -193,18 +224,40 @@ if ($filter === 'ALL') {
                 if (!id || !action) return;
                 if (action === 'delete' && !confirm('Permanently delete this entry?')) return;
 
+                // If action is toggle-embed, decide whether to allow or disallow based on current data-embed
+                if (action === 'toggle-embed') {
+                    var current = this.getAttribute('data-embed');
+                    action = (current === '1') ? 'disallow-embed' : 'allow-embed';
+                }
+
                 var params = new URLSearchParams();
                 params.append('action', action);
                 params.append('ids[]', id);
 
+                // Post to the same path including current query string so we remain on the same status filter
                 fetch(window.location.pathname + window.location.search, {
                     method: 'POST',
                     body: params,
                     credentials: 'same-origin',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 }).then(function(resp){
-                    // reload page to show updated list and message
-                    window.location.reload();
+                    // If this was a toggle embed action, update the button state in-place to avoid a full reload
+                    if (action === 'allow-embed' || action === 'disallow-embed') {
+                        try {
+                            var btnEl = document.querySelector('.admin-row-action[data-id="' + id + '"][data-action="toggle-embed"]');
+                            if (btnEl) {
+                                var now = (action === 'allow-embed') ? '1' : '0';
+                                btnEl.setAttribute('data-embed', now);
+                                // optional visual cue: change title and small badge in the row if present
+                                btnEl.title = (now === '1') ? 'Embed allowed (click to disable)' : 'Embed disabled (click to allow)';
+                            }
+                        } catch (e) { /* ignore DOM update errors */ }
+                        // reload to reflect status badges/messages while staying on same filter
+                        window.location.reload();
+                    } else {
+                        // For other actions, reload page and keep same status filter (query string preserved)
+                        window.location.reload();
+                    }
                 }).catch(function(){
                     alert('Network error while performing action.');
                 });
