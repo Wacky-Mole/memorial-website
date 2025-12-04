@@ -108,6 +108,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <div id="photo-preview-list" style="display:flex; gap:12px; flex-wrap:wrap;"></div>
                 </div>
             </div>
+            <div style="margin-top:12px;">
+                <label for="video_url">Embed video (YouTube, Facebook, Nextcloud) — URL only:</label>
+                <input type="url" name="video_url" id="video_url" placeholder="https://...">
+                <div style="font-size:90%; color:#666;">We only accept embeds from YouTube, Facebook, or your Nextcloud server. Do not paste raw embed HTML.</div>
+                <label for="video_caption">Video caption (optional):</label>
+                <input type="text" name="video_caption" id="video_caption" placeholder="Caption for the video">
+            </div>
             <div>
                 <input type="submit" value="Submit">
             </div>

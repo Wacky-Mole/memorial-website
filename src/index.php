@@ -191,8 +191,19 @@ if (!isConfigured()) {
                                     $titleAttr = 'Submitted by: ' . $contributor;
                                 }
                                 echo '<figure class="entry-photo">';
-                                echo '<img class="lightbox-img" src="' . htmlspecialchars($imgUrl . $cache) . '" alt="photo" title="' . htmlspecialchars($titleAttr) . '" loading="lazy" style="cursor:zoom-in;">';
-                                if (!empty($cap)) echo '<figcaption class="entry-caption">' . htmlspecialchars($cap) . '</figcaption>';
+                                // If this entry is a video (type=video), render an iframe embed
+                                if (!empty($ph['type']) && $ph['type'] === 'video') {
+                                    $embedSrc = $ph['path'] ?? ($imgUrl . $cache);
+                                    $esc = htmlspecialchars($embedSrc);
+                                    $captionEsc = htmlspecialchars($cap);
+                                    echo '<div class="entry-video" style="max-width:100%;">';
+                                    echo '<iframe src="' . $esc . '" frameborder="0" allowfullscreen style="width:100%; height:360px; border:0;" loading="lazy"></iframe>';
+                                    if (!empty($cap)) echo '<figcaption class="entry-caption">' . $captionEsc . '</figcaption>';
+                                    echo '</div>';
+                                } else {
+                                    echo '<img class="lightbox-img" src="' . htmlspecialchars($imgUrl . $cache) . '" alt="photo" title="' . htmlspecialchars($titleAttr) . '" loading="lazy" style="cursor:zoom-in;">';
+                                    if (!empty($cap)) echo '<figcaption class="entry-caption">' . htmlspecialchars($cap) . '</figcaption>';
+                                }
                                 echo '</figure>';
                             }
                             echo '</div>'; // entry-photos

@@ -6,6 +6,8 @@ require_once 'config.php';
 require_once 'service/storage.php';
 require_once __DIR__ . '/service/email_utils.php';
 require_once __DIR__ . '/service/settings.php';
+// navbar.php provides helpers like asset_url() and root-aware paths
+require_once __DIR__ . '/service/navbar.php';
 
 // Check if the form is submitted
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -85,9 +87,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $photoPath = json_encode($entries);
     }
 
-    // Require a message if no photos were successfully uploaded
-    if (empty($message) && empty($photoPaths)) {
-        die('Please provide a memory or message, or upload a photo.');
+    // Optional external video embed URL (only allow whitelisted hosts)
+    $videoUrl = trim($_POST['video_url'] ?? '');
+    $videoCaption = trim($_POST['video_caption'] ?? '');
+    $videoEntry = null;
+    if ($videoUrl !== '') {
+        // Basic parsing and host check
+        $parsed = parse_url($videoUrl);
+        $host = strtolower($parsed['host'] ?? '');
+        $allowedHosts = ['youtube.com','youtu.be','facebook.com','fb.watch','nextcloud'];
+        $okHost = false;
+        foreach ($allowedHosts as $ah) {
+            if ($ah === 'nextcloud') {
+                // allow any host that contains 'nextcloud' or administrators can configure allowed nextcloud host later
+                if (strpos($host, 'nextcloud') !== false) { $okHost = true; break; }
+            } elseif (substr($host, -strlen($ah)) === $ah) { $okHost = true; break; }
+        }
+        if (!$okHost) {
+            die('Video hosting not allowed. Only YouTube, Facebook, and Nextcloud embeds are accepted.');
+        }
+
+        // Normalize to an embeddable URL
+        $embedUrl = '';
+        if (strpos($host, 'youtube') !== false || strpos($host, 'youtu.be') !== false) {
+            // extract video id
+            // handle youtu.be/ID
+            if (strpos($host, 'youtu.be') !== false) {
+                $vid = ltrim($parsed['path'] ?? '', '/');
+            } else {
+                parse_str($parsed['query'] ?? '', $qs);
+                $vid = $qs['v'] ?? '';
+                if (empty($vid)) {
+                    // maybe a /v/ or /embed/ style path
+                    $p = $parsed['path'] ?? '';
+                    if (preg_match('#/(?:embed|v)/([^/?]+)#', $p, $m)) $vid = $m[1];
+                }
+            }
+            if (!empty($vid)) $embedUrl = 'https://www.youtube.com/embed/' . rawurlencode($vid);
+        } elseif (strpos($host, 'facebook.com') !== false || strpos($host, 'fb.watch') !== false) {
+            // Facebook uses the plugins/video.php?href=... pattern
+            $embedUrl = 'https://www.facebook.com/plugins/video.php?href=' . rawurlencode($videoUrl);
+        } else {
+            // For Nextcloud or unknown-but-allowed hosts, use user-provided URL directly (admin should ensure it's a public share)
+            $embedUrl = $videoUrl;
+        }
+
+        if (empty($embedUrl)) die('Could not build embed URL for the provided video link.');
+        $videoEntry = ['type' => 'video', 'path' => $embedUrl, 'caption' => filter_var($videoCaption, FILTER_SANITIZE_FULL_SPECIAL_CHARS)];
+    }
+
+    // Require a message if no photos and no video were provided
+    if (empty($message) && empty($photoPaths) && $videoEntry === null) {
+        die('Please provide a memory or message, upload a photo, or provide a video link.');
+    }
+
+    // If we have a video entry, append it into the photo JSON so rendering can show it alongside photos
+    if ($videoEntry !== null) {
+        $entries = $entries ?? [];
+        $entries[] = $videoEntry;
+        $photoPath = json_encode($entries);
     }
 
     // Save entry via storage helper (returns true/false)
