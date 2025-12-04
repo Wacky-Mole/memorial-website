@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../config.php';
+require_once __DIR__ . '/../service/navbar.php';
 require_once '../service/storage.php';
 
 if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {

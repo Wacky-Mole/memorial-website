@@ -9,6 +9,7 @@ if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
 
 // Include configuration file
 require_once '../config.php';
+require_once __DIR__ . '/../service/navbar.php';
 require_once __DIR__ . '/../service/settings.php';
 require_once __DIR__ . '/../service/upload_check.php';
 

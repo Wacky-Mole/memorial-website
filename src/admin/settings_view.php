@@ -8,6 +8,7 @@ if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
 }
 
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../service/navbar.php';
 require_once __DIR__ . '/../service/settings.php';
 require_once __DIR__ . '/../service/email_utils.php';
 
