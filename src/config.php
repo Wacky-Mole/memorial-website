@@ -111,6 +111,12 @@ if (!defined('SMTP_SECURE')) {
 	define('SMTP_SECURE', 'none');
 }
 
+// Video embed host whitelist. Admins may edit this file to permit additional
+// embed hosts (substring matches allowed for convenience, e.g. 'nextcloud').
+if (!defined('ALLOWED_VIDEO_HOSTS')) {
+    define('ALLOWED_VIDEO_HOSTS', ['youtube.com','youtu.be','facebook.com','fb.watch','nextcloud','senkor.info']);
+}
+
 // Temporary admin plaintext password (only used as a fallback during recovery).
 // Set to 'admin' per your request. REMOVE this line after converting to a hashed password.
 // Define an admin password hash. By default the installer sets a safe hash for 'admin'.

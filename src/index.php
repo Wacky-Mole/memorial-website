@@ -193,13 +193,44 @@ if (!isConfigured()) {
                                 echo '<figure class="entry-photo">';
                                 // If this entry is a video (type=video), render an iframe embed
                                 if (!empty($ph['type']) && $ph['type'] === 'video') {
-                                    $embedSrc = $ph['path'] ?? ($imgUrl . $cache);
-                                    $esc = htmlspecialchars($embedSrc);
+                                    $videoUrlRaw = $ph['path'] ?? '';
                                     $captionEsc = htmlspecialchars($cap);
-                                    echo '<div class="entry-video" style="max-width:100%;">';
-                                    echo '<iframe src="' . $esc . '" frameborder="0" allowfullscreen style="width:100%; height:360px; border:0;" loading="lazy"></iframe>';
-                                    if (!empty($cap)) echo '<figcaption class="entry-caption">' . $captionEsc . '</figcaption>';
-                                    echo '</div>';
+                                    // Only render inline iframe if admin has allowed embedding for this entry
+                                    $canEmbed = isset($entry['embed_allowed']) && intval($entry['embed_allowed']) === 1;
+                                    if ($canEmbed) {
+                                        // Build an embeddable URL for common hosts, fallback to raw URL
+                                        $embedSrc = $videoUrlRaw;
+                                        $parsedV = parse_url($videoUrlRaw);
+                                        $hostV = strtolower($parsedV['host'] ?? '');
+                                        if (strpos($hostV, 'youtube') !== false || strpos($hostV, 'youtu.be') !== false) {
+                                            if (strpos($hostV, 'youtu.be') !== false) {
+                                                $vid = ltrim($parsedV['path'] ?? '', '/');
+                                            } else {
+                                                parse_str($parsedV['query'] ?? '', $qs);
+                                                $vid = $qs['v'] ?? '';
+                                                if (empty($vid)) {
+                                                    $p = $parsedV['path'] ?? '';
+                                                    if (preg_match('#/(?:embed|v)/([^/?]+)#', $p, $m)) $vid = $m[1];
+                                                }
+                                            }
+                                            if (!empty($vid)) $embedSrc = 'https://www.youtube.com/embed/' . rawurlencode($vid);
+                                        } elseif (strpos($hostV, 'facebook.com') !== false || strpos($hostV, 'fb.watch') !== false) {
+                                            $embedSrc = 'https://www.facebook.com/plugins/video.php?href=' . rawurlencode($videoUrlRaw);
+                                        }
+                                        $esc = htmlspecialchars($embedSrc);
+                                        echo '<div class="entry-video" style="max-width:100%;">';
+                                        echo '<iframe src="' . $esc . '" frameborder="0" allowfullscreen style="width:100%; height:360px; border:0;" loading="lazy" referrerpolicy="no-referrer"></iframe>';
+                                        if (!empty($cap)) echo '<figcaption class="entry-caption">' . $captionEsc . '</figcaption>';
+                                        echo '</div>';
+                                    } else {
+                                        // Not allowed to embed yet — show a safe external link instead
+                                        $safeUrl = htmlspecialchars($videoUrlRaw);
+                                        echo '<div class="entry-video-link" style="padding:10px;border:1px solid #eee;border-radius:6px;background:#fafafa;">';
+                                        echo '<div style="font-size:95%;margin-bottom:6px;">Video link (click to open):</div>';
+                                        echo '<a href="' . $safeUrl . '" target="_blank" rel="noopener noreferrer">' . $safeUrl . '</a>';
+                                        if (!empty($cap)) echo '<div class="entry-caption" style="margin-top:6px;">' . $captionEsc . '</div>';
+                                        echo '</div>';
+                                    }
                                 } else {
                                     echo '<img class="lightbox-img" src="' . htmlspecialchars($imgUrl . $cache) . '" alt="photo" title="' . htmlspecialchars($titleAttr) . '" loading="lazy" style="cursor:zoom-in;">';
                                     if (!empty($cap)) echo '<figcaption class="entry-caption">' . htmlspecialchars($cap) . '</figcaption>';

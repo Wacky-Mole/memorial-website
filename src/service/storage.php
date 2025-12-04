@@ -27,6 +27,7 @@ function getPDO() {
         photo TEXT,
         created_at TEXT,
         status TEXT,
+        embed_allowed INTEGER DEFAULT 0,
         ip TEXT
     )");
 
@@ -38,6 +39,20 @@ function getPDO() {
         created_at TEXT,
         UNIQUE(entry_id, ip)
     )");
+
+    // Ensure embed_allowed column exists for existing DBs; add if missing
+    try {
+        $cols = $pdo->query("PRAGMA table_info('entries')")->fetchAll(PDO::FETCH_ASSOC);
+        $hasEmbed = false;
+        foreach ($cols as $c) {
+            if (isset($c['name']) && $c['name'] === 'embed_allowed') { $hasEmbed = true; break; }
+        }
+        if (!$hasEmbed) {
+            $pdo->exec("ALTER TABLE entries ADD COLUMN embed_allowed INTEGER DEFAULT 0");
+        }
+    } catch (Exception $e) {
+        // ignore; older DBs without PRAGMA support are unlikely
+    }
 
     return $pdo;
 }
@@ -59,7 +74,7 @@ function saveMemorialEntry($email, $contributorName, $message, $photoPath = '') 
             // settings table might not exist yet; default to NOT_APPROVED
         }
 
-        $stmt = $pdo->prepare("INSERT INTO entries (memorial,email,contributor,message,photo,created_at,status,ip) VALUES (:memorial,:email,:contributor,:message,:photo,:created_at,:status,:ip)");
+        $stmt = $pdo->prepare("INSERT INTO entries (memorial,email,contributor,message,photo,created_at,status,embed_allowed,ip) VALUES (:memorial,:email,:contributor,:message,:photo,:created_at,:status,:embed_allowed,:ip)");
         $stmt->execute([
             ':memorial' => defined('MEMORIAL_NAME') ? MEMORIAL_NAME : '',
             ':email' => $email,
@@ -68,6 +83,7 @@ function saveMemorialEntry($email, $contributorName, $message, $photoPath = '') 
             ':photo' => $photoPath,
             ':created_at' => date('Y-m-d H:i:s'),
             ':status' => $status,
+            ':embed_allowed' => 0,
             ':ip' => $_SERVER['REMOTE_ADDR'] ?? ''
         ]);
         return true;
@@ -106,6 +122,20 @@ function updateEntriesStatus(array $ids, $status) {
         return $stmt->execute($params);
     } catch (Exception $e) {
         error_log('updateEntriesStatus error: ' . $e->getMessage());
+        return false;
+    }
+}
+
+function updateEntriesEmbedAllowed(array $ids, $value) {
+    if (empty($ids)) return false;
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("UPDATE entries SET embed_allowed = ? WHERE id IN ($placeholders)");
+    $params = array_merge([(int)$value], $ids);
+    try {
+        return $stmt->execute($params);
+    } catch (Exception $e) {
+        error_log('updateEntriesEmbedAllowed error: ' . $e->getMessage());
         return false;
     }
 }

@@ -41,6 +41,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
         if (deleteEntries($ids)) {
             $message = 'Selected entries deleted.';
         }
+        } elseif ($action === 'allow-embed') {
+            if (function_exists('updateEntriesEmbedAllowed') && updateEntriesEmbedAllowed($ids, 1)) {
+                $message = 'Embed allowed for selected entries.';
+            }
+        } elseif ($action === 'disallow-embed') {
+            if (function_exists('updateEntriesEmbedAllowed') && updateEntriesEmbedAllowed($ids, 0)) {
+                $message = 'Embed disabled for selected entries.';
+            }
     }
 }
 
@@ -112,6 +120,7 @@ if ($filter === 'ALL') {
                                 <td style="white-space:nowrap;">
                                     <button type="button" class="admin-row-action" data-action="approve" data-id="<?php echo intval($entry['id']); ?>" style="margin-right:6px;">✅</button>
                                     <button type="button" class="admin-row-action" data-action="bin" data-id="<?php echo intval($entry['id']); ?>" style="margin-right:6px;">🚫</button>
+                                    <button type="button" class="admin-row-action" data-action="allow-embed" data-id="<?php echo intval($entry['id']); ?>" title="Allow embed for this entry" style="margin-right:6px;">📺</button>
                                     <button type="button" class="admin-row-action" data-action="delete" data-id="<?php echo intval($entry['id']); ?>" style="color:#900;">🗑</button>
                                 </td>
                             <td><?php echo htmlspecialchars($entry['email'] ?? ''); ?></td>
@@ -169,6 +178,8 @@ if ($filter === 'ALL') {
                 <button type="submit" name="action" value="approve">Approve selected</button>
                 <button type="submit" name="action" value="bin">Reject selected</button>
                 <button type="submit" name="action" value="delete" onclick="return confirm('Permanently delete selected entries?');">Delete selected</button>
+                <button type="submit" name="action" value="allow-embed">Allow embed selected</button>
+                <button type="submit" name="action" value="disallow-embed">Disable embed selected</button>
             </div>
         </form>
     </div>
