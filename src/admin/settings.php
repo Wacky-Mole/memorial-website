@@ -14,7 +14,7 @@ require_once __DIR__ . '/../service/settings.php';
 require_once __DIR__ . '/../service/upload_check.php';
 
 // Initialize variables for settings
-$memorial_name = MEMORIAL_NAME;
+$memorial_name = function_exists('get_setting') ? get_setting('memorial_name', (defined('MEMORIAL_NAME') ? MEMORIAL_NAME : '')) : (defined('MEMORIAL_NAME') ? MEMORIAL_NAME : '');
 $message = '';
 
 // Title prefix (e.g., "In Memory of") stored in settings
@@ -185,16 +185,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cfg .= "\n// Site title\ndefine('SITE_TITLE', '" . addslashes($titleText) . "');\n";
             }
 
-            // Write back
+            // Write back (best-effort to keep config.php updated)
             if (file_put_contents($configFile, $cfg) === false) {
-                $error = 'Failed to write configuration file.';
-                // log write failure
+                // If config write fails, don't treat as fatal — persist name in DB below
                 if (defined('DATA_DIR')) @file_put_contents(DATA_DIR . 'upload_debug.log', date('c') . " | config write failed\n", FILE_APPEND);
             } else {
-                // reload config values in current request
-                require_once $configFile;
-                $message = 'Settings updated successfully.';
+                // reload config values in current request (may be a no-op if already included)
+                @include_once $configFile;
             }
+            // Persist memorial name to DB-backed settings so updates are reliable across environments
+            if (function_exists('set_setting')) {
+                set_setting('memorial_name', $memorial_name);
+            }
+            $message = 'Settings updated successfully.';
         }
     }
 
@@ -329,6 +332,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Refresh local variables for form display
     $notify_on_submission = ($notify_on_submission === '1');
     $smtp_enabled = ($smtp_enabled === '1');
+    // If save succeeded (no $error), redirect to admin dashboard for a clearer UX
+    if (!isset($error)) {
+        header('Location: index.php?success=1');
+        exit();
+    }
 }
 ?>
 

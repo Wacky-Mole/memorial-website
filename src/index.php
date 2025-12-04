@@ -26,11 +26,13 @@ if (!isConfigured()) {
         // Allow admin-configured title prefix and position when available
         $titlePrefix = function_exists('get_setting') ? get_setting('title_prefix', '') : '';
         $titlePos = function_exists('get_setting') ? get_setting('title_prefix_position', 'before') : 'before';
-        if (!empty($titlePrefix) && !empty(MEMORIAL_NAME)) {
+        // Prefer DB-backed memorial name when available
+        $memorialName = function_exists('get_setting') ? get_setting('memorial_name', (defined('MEMORIAL_NAME') ? MEMORIAL_NAME : '')) : (defined('MEMORIAL_NAME') ? MEMORIAL_NAME : '');
+        if (!empty($titlePrefix) && !empty($memorialName)) {
             if ($titlePos === 'after') {
-                $displayTitle = MEMORIAL_NAME . ' ' . $titlePrefix;
+                $displayTitle = $memorialName . ' ' . $titlePrefix;
             } else {
-                $displayTitle = $titlePrefix . ' ' . MEMORIAL_NAME;
+                $displayTitle = $titlePrefix . ' ' . $memorialName;
             }
         } else {
             $displayTitle = defined('SITE_TITLE') ? SITE_TITLE : SITE_NAME;
