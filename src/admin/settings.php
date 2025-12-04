@@ -110,39 +110,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($baseDir === false) $baseDir = __DIR__ . '/..';
                 $uploadedFsPath = rtrim($baseDir, '/\\') . '/' . ltrim($uploadedWebPath, '/\\');
 
-                $ext = strtolower(pathinfo($uploadedFsPath, PATHINFO_EXTENSION));
-                if ($ext === '') $ext = 'jpg';
-                $stableWebPath = 'uploads/memorial/main.' . $ext;
+                // We will always store the stable memorial photo as PNG: uploads/memorial/main.png
+                $stableWebPath = 'uploads/memorial/main.png';
                 $stableFsPath = rtrim($baseDir, '/\\') . '/' . $stableWebPath;
 
-                // Ensure target directory exists
-                $stableDir = dirname($stableFsPath);
-                if (!is_dir($stableDir)) mkdir($stableDir, 0755, true);
-
-                // Move the uploaded file into the stable filename (overwrite existing)
-                $moved = false;
+                // Convert the uploaded file to PNG and write to stable path
+                $converted = false;
                 if (file_exists($uploadedFsPath)) {
-                    // attempt to rename (fast), otherwise copy and unlink
-                    if (@rename($uploadedFsPath, $stableFsPath)) {
-                        $moved = true;
-                    } elseif (@copy($uploadedFsPath, $stableFsPath)) {
-                        @unlink($uploadedFsPath);
-                        $moved = true;
-                    }
-                } else {
-                    // Fallback: maybe the returned path is already the stable path or temp file not found
-                    // Try copying from web-relative location (not ideal) — attempt to copy using relative path
-                    $possibleSrc = __DIR__ . '/../' . ltrim($uploadedWebPath, '/\\');
-                    if (file_exists($possibleSrc) && (@copy($possibleSrc, $stableFsPath))) {
-                        $moved = true;
+                    $data = @file_get_contents($uploadedFsPath);
+                    if ($data !== false) {
+                        $img = @imagecreatefromstring($data);
+                        if ($img !== false) {
+                            $stableDir = dirname($stableFsPath);
+                            if (!is_dir($stableDir)) mkdir($stableDir, 0755, true);
+                            if (@imagepng($img, $stableFsPath)) {
+                                $converted = true;
+                            }
+                            imagedestroy($img);
+                        }
                     }
                 }
 
-                if ($moved) {
+                if ($converted) {
                     @chmod($stableFsPath, 0644);
+                    // remove original uploaded file if present
+                    if (file_exists($uploadedFsPath) && realpath($uploadedFsPath) !== realpath($stableFsPath)) @unlink($uploadedFsPath);
                     $photo_path = $stableWebPath;
                 } else {
-                    $error = 'Memorial photo upload succeeded but could not be moved to stable filename.';
+                    $error = 'Memorial photo upload succeeded but could not be converted to PNG.';
                 }
             } else {
                 $error = 'Memorial photo upload failed: ' . htmlspecialchars($result);

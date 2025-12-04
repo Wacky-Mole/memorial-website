@@ -29,38 +29,43 @@ $baseDir = realpath(__DIR__ . '/..');
 if ($baseDir === false) $baseDir = __DIR__ . '/..';
 $uploadedFsPath = rtrim($baseDir, '/\\') . '/' . ltrim($uploadedWebPath, '/\\');
 
-$ext = strtolower(pathinfo($uploadedFsPath, PATHINFO_EXTENSION));
-if ($ext === '') $ext = 'jpg';
-$stableWebPath = 'uploads/memorial/main.' . $ext;
+// Always store the stable memorial photo as PNG
+$stableWebPath = 'uploads/memorial/main.png';
 $stableFsPath = rtrim($baseDir, '/\\') . '/' . ltrim($stableWebPath, '/\\');
 
 // Ensure target dir exists
 $stableDir = dirname($stableFsPath);
 if (!is_dir($stableDir)) mkdir($stableDir, 0755, true);
 
-$moved = false;
+// Convert the uploaded file to PNG and save as the stable filename
+$converted = false;
 if (file_exists($uploadedFsPath)) {
-    if (@rename($uploadedFsPath, $stableFsPath)) {
-        $moved = true;
-    } elseif (@copy($uploadedFsPath, $stableFsPath)) {
-        @unlink($uploadedFsPath);
-        $moved = true;
-    }
-} else {
-    $possibleSrc = __DIR__ . '/../' . ltrim($uploadedWebPath, '/\\');
-    if (file_exists($possibleSrc) && (@copy($possibleSrc, $stableFsPath))) {
-        $moved = true;
+    $data = @file_get_contents($uploadedFsPath);
+    if ($data !== false) {
+        $img = @imagecreatefromstring($data);
+        if ($img !== false) {
+            // Ensure target dir exists
+            $stableDir = dirname($stableFsPath);
+            if (!is_dir($stableDir)) mkdir($stableDir, 0755, true);
+            // Write PNG
+            if (@imagepng($img, $stableFsPath)) {
+                $converted = true;
+            }
+            imagedestroy($img);
+        }
     }
 }
 
-if (!$moved) {
-    echo json_encode(['ok' => false, 'message' => 'Upload succeeded but moving to stable filename failed.']);
+if (!$converted) {
+    echo json_encode(['ok' => false, 'message' => 'Upload succeeded but converting to PNG failed.']);
     exit();
 }
 
 @chmod($stableFsPath, 0644);
-// Normalize saved image to strip EXIF/orientation and ensure consistent format
-@chmod($stableFsPath, 0644);
+// Remove the original uploaded file if it still exists and is different
+if (file_exists($uploadedFsPath) && realpath($uploadedFsPath) !== realpath($stableFsPath)) {
+    @unlink($uploadedFsPath);
+}
 
 // Update config.php define for MEMORIAL_PHOTO (atomic write)
 $configFile = __DIR__ . '/../config.php';

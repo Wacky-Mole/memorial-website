@@ -20,7 +20,7 @@ if (!defined('MEMORIAL_NAME')) {
 // Path to memorial photo (relative to site root)
 if (!defined('MEMORIAL_PHOTO')) {
 	// Default memorial photo path. Updated to the most recent uploaded image.
-	define('MEMORIAL_PHOTO', 'uploads/memorial/2fd8c292fd56a8af.jpg');
+	define('MEMORIAL_PHOTO', 'uploads/memorial/main.png');
 }
 
 // Site title (falls back to SITE_NAME or "In Memory of [NAME]")
