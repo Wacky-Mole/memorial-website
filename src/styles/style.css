@@ -122,10 +122,28 @@ footer {
 #upload-progress-bar { width:0; height:10px; background:#4caf50; border-radius:4px; transition:width .2s; }
 #photo-preview img { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
 
-/* Entries grid */
 .entries-section { margin-top: 28px; }
-.entries-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:18px; margin-top:12px; }
-.entry { background: #fff; padding:12px; border-radius:8px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); }
+.entries-grid {
+    /* Use CSS Columns to create a masonry-like, jumbled layout where each
+       entry's height depends on its content (photos + message) rather than
+       forcing uniform row heights. */
+    column-count: 3;
+    column-gap: 18px;
+    margin-top: 12px;
+}
+.entry {
+    display: inline-block; /* required for column flow */
+    width: 100%;
+    background: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    margin: 0 0 18px; /* vertical gutter */
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    -moz-column-break-inside: avoid;
+    box-sizing: border-box;
+}
 .entry-photos { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start; }
 .entry-photo { width:100%; max-width:100%; display:flex; flex-direction:column; align-items:flex-start; }
 .entry-photo img { max-width:100%; height:auto; border-radius:6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor:default; }
@@ -139,9 +157,13 @@ footer {
 
 /* Hover tooltip handled via title attribute on img (native). For nicer look, we keep default browser tooltip. */
 
+@media (max-width:1100px) {
+    .entries-grid { column-count: 2; }
+}
+
 @media (max-width:600px) {
     .container { width:95%; }
-    .entries-grid { grid-template-columns: 1fr; }
+    .entries-grid { column-count: 1; }
 }
 
 /* Buttons */
@@ -194,3 +216,4 @@ footer {
     50% { transform: scale(1.25); opacity: 0.95; }
  100% { transform: scale(1); opacity: 1; }
 }
+/* No JS masonry styles — using CSS grid layout for entries */

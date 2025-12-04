@@ -332,6 +332,7 @@ if (!isConfigured()) {
             var obs2 = new MutationObserver(function(){ initHearts(); });
             obs2.observe(document.body, { childList:true, subtree:true });
         })();
+        
         </script>
 </body>
 </html>
