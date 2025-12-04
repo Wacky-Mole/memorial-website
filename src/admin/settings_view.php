@@ -153,7 +153,7 @@ function val($k, $d = '') {
     <link rel="stylesheet" href="<?php echo htmlspecialchars(asset_url('styles/style.css')); ?>">
     <?php
         $favicon = get_setting('favicon', '');
-        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">';
+        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars(asset_url($favicon)) . '">';
     ?>
 </head>
 <body>

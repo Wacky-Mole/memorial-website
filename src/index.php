@@ -40,7 +40,7 @@ if (!isConfigured()) {
         // Output configured favicon if present
         $favicon_path = get_setting('favicon', '');
         if (!empty($favicon_path)) {
-            echo '<link rel="icon" href="' . htmlspecialchars($favicon_path) . '">';
+            echo '<link rel="icon" href="' . htmlspecialchars(asset_url($favicon_path)) . '">';
         }
     ?>
 </head>

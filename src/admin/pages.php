@@ -90,7 +90,7 @@ if ($selected === 'page_footer') {
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <!-- Google Fonts for editor font choices -->
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Roboto:wght@400;700&family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
-    <?php $favicon = get_setting('favicon',''); if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">'; ?>
+    <?php $favicon = get_setting('favicon',''); if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars(asset_url($favicon)) . '">'; ?>
     <style>
         .editor-toolbar button { margin-right:6px; }
         .editor-area { border:1px solid #ccc; padding:10px; min-height:120px; border-radius:4px; background:#fff; }

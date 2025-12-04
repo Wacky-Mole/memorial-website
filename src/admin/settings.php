@@ -205,8 +205,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $favicon_choice = $_POST['favicon_choice'] ?? '';
     // If admin selected one of the preset choices
     if ($favicon_choice === 'red_heart') {
-        set_setting('favicon', 'data/favicon/red_heart.svg');
-        $current_favicon = 'data/favicon/red_heart.svg';
+        // Ensure a web-accessible copy exists under uploads/favicon
+        $baseDir = realpath(__DIR__ . '/..'); if ($baseDir === false) $baseDir = __DIR__ . '/..';
+        $src = rtrim($baseDir, '/\\') . '/data/favicon/red_heart.svg';
+        $destDir = rtrim($baseDir, '/\\') . '/uploads/favicon';
+        if (!is_dir($destDir)) @mkdir($destDir, 0755, true);
+        $dest = $destDir . '/red_heart.svg';
+        if (file_exists($src) && (!file_exists($dest) || filemtime($src) > filemtime($dest))) {
+            @copy($src, $dest);
+            @chmod($dest, 0644);
+        }
+        $webPath = 'uploads/favicon/red_heart.svg';
+        set_setting('favicon', $webPath);
+        $current_favicon = $webPath;
     } elseif ($favicon_choice === 'none') {
         set_setting('favicon', '');
         $current_favicon = '';
@@ -320,7 +331,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="<?php echo htmlspecialchars(asset_url('styles/style.css')); ?>">
     <?php
         $favicon = get_setting('favicon', '');
-        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">';
+        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars(asset_url($favicon)) . '">';
     ?>
 </head>
 <body>
@@ -398,7 +409,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="radio" name="favicon_choice" value="none" <?php echo ($current_favicon === '') ? 'checked' : ''; ?>> No favicon
             </label>
             <label style="margin-left:12px;">
-                <input type="radio" name="favicon_choice" value="red_heart" <?php echo ($current_favicon === 'data/favicon/red_heart.svg') ? 'checked' : ''; ?>> Red heart
+                <input type="radio" name="favicon_choice" value="red_heart" <?php echo (strpos($current_favicon, 'red_heart.svg') !== false) ? 'checked' : ''; ?>> Red heart
             </label>
         </div>
         <div style="margin-top:8px;">
@@ -408,8 +419,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div style="margin-top:8px;">
             <strong>Current favicon preview:</strong>
             <div style="margin-top:6px;">
-                <?php if (!empty($current_favicon)): ?>
-                    <img src="<?php echo htmlspecialchars($current_favicon); ?>" alt="favicon" style="width:32px;height:32px;vertical-align:middle;border:1px solid #ddd;padding:2px;background:#fff;">
+                <?php if (!empty($current_favicon)): 
+                        $favUrl = asset_url($current_favicon);
+                        $favFs = __DIR__ . '/../' . ltrim($current_favicon, '/\\');
+                ?>
+                    <?php if (file_exists($favFs)): ?>
+                        <img src="<?php echo htmlspecialchars($favUrl); ?>" alt="favicon" style="width:32px;height:32px;vertical-align:middle;border:1px solid #ddd;padding:2px;background:#fff;">
+                    <?php else: ?>
+                        <div style="color:#b00;">Favicon not found at <code><?php echo htmlspecialchars($favUrl); ?></code></div>
+                    <?php endif; ?>
                 <?php else: ?>
                     <span style="color:#666;">(none)</span>
                 <?php endif; ?>

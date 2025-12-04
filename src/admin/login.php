@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <style> .login-box{max-width:420px;margin:40px auto;padding:18px;border:1px solid #ddd;border-radius:6px} .hint{font-size:0.9em;color:#666;margin-top:8px;} </style>
     <?php
         $favicon = get_setting('favicon', '');
-        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">';
+        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars(asset_url($favicon)) . '">';
     ?>
 </head>
 <body>

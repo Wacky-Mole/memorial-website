@@ -61,7 +61,7 @@ if ($filter === 'ALL') {
     <title>Admin Dashboard</title>
     <?php
         $favicon = get_setting('favicon', '');
-        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">';
+        if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars(asset_url($favicon)) . '">';
     ?>
     <link rel="stylesheet" href="<?php echo htmlspecialchars(asset_url('styles/style.css')); ?>">
 </head>
