@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Admin Login</title>
-    <link rel="stylesheet" href="../styles/style.css">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(asset_url('styles/style.css')); ?>">
     <style> .login-box{max-width:420px;margin:40px auto;padding:18px;border:1px solid #ddd;border-radius:6px} .hint{font-size:0.9em;color:#666;margin-top:8px;} </style>
     <?php
         $favicon = get_setting('favicon', '');

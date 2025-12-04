@@ -15,7 +15,7 @@ $content = get_setting('page_about', '');
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title><?php echo htmlspecialchars(defined('SITE_TITLE') ? SITE_TITLE : SITE_NAME); ?> - About</title>
-    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(asset_url('styles/style.css')); ?>">
     <?php $favicon = get_setting('favicon',''); if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">'; ?>
 </head>
 <body>

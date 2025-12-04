@@ -84,7 +84,7 @@ if ($selected === 'page_footer') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Edit Pages</title>
-    <link rel="stylesheet" href="../styles/style.css">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(asset_url('styles/style.css')); ?>">
     <!-- Quill WYSIWYG -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <!-- Google Fonts for editor font choices -->

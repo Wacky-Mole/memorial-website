@@ -35,7 +35,7 @@ if (!isConfigured()) {
         }
     ?>
     <title><?php echo htmlspecialchars($displayTitle); ?></title>
-    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(asset_url('styles/style.css')); ?>">
     <?php
         // Output configured favicon if present
         $favicon_path = get_setting('favicon', '');

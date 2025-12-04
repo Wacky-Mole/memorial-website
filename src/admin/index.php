@@ -63,7 +63,7 @@ if ($filter === 'ALL') {
         $favicon = get_setting('favicon', '');
         if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars($favicon) . '">';
     ?>
-    <link rel="stylesheet" href="../styles/style.css">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(asset_url('styles/style.css')); ?>">
 </head>
 <body>
     <?php renderNavbar(true); ?>

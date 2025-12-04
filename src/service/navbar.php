@@ -1,4 +1,26 @@
 <?php
+// Return the application root prefix ('' or '/prefix') for building root-aware URLs
+function getRootPrefix(): string {
+    $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+    if ($scriptDir === '/' || $scriptDir === '.') $scriptDir = '';
+    $appRoot = $scriptDir;
+    if (substr($appRoot, -6) === '/admin') {
+        $appRoot = rtrim(dirname($appRoot), '/\\');
+    }
+    return ($appRoot === '' ? '' : $appRoot);
+}
+
+// Build an asset URL (root-aware) and append version query string for cache-busting
+function asset_url(string $path): string {
+    $rootPrefix = getRootPrefix();
+    $clean = ltrim($path, '/');
+    $url = ($rootPrefix === '' ? '/' . $clean : $rootPrefix . '/' . $clean);
+    if (defined('ASSET_VERSION')) {
+        $url .= '?v=' . ASSET_VERSION;
+    }
+    return $url;
+}
+
 function renderNavbar($isAdmin = false) {
     // Load settings helper so we can show public page links only when content exists
     $settingsFile = __DIR__ . '/settings.php';

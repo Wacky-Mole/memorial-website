@@ -69,6 +69,12 @@ if (!defined('DB_PATH')) {
 }
 define('MAX_FILE_SIZE', 10485760); // 10MB in bytes
 define('ALLOWED_FILE_TYPES', ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp']);
+	
+// Asset version for cache-busting (use filemtime of main stylesheet)
+if (!defined('ASSET_VERSION')) {
+    $cssPath = __DIR__ . '/styles/style.css';
+    define('ASSET_VERSION', file_exists($cssPath) ? (string)@filemtime($cssPath) : '1');
+}
 
 // Notification settings (admin can enable/disable and set email)
 if (!defined('NOTIFY_ON_SUBMISSION')) {
