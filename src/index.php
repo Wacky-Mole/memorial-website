@@ -149,7 +149,7 @@ if (!isConfigured()) {
                         // Parse photos (JSON array of {path,caption}) or legacy single path
                         $photos = [];
                         if ($photoField !== '') {
-                            $trimmed = ltrim($photoField);
+                               $trimmed = ltrim($photoField);
                             if (strpos($trimmed, '[') === 0) {
                                 $decoded = json_decode($trimmed, true);
                                 if (is_array($decoded)) $photos = $decoded;
@@ -178,8 +178,18 @@ if (!isConfigured()) {
                                 $cache = '';
                                 if (file_exists($fsPath)) { $mt = @filemtime($fsPath); if ($mt) $cache = '?v=' . $mt; }
 
-                                // Image with hover title of contributor
-                                $titleAttr = $contributor ? ('Submitted by: ' . $contributor) : '';
+                                // Image title: prefer the photo caption for the lightbox caption, fall back to contributor
+                                $titleAttr = '';
+                                if (!empty($cap)) {
+                                    $titleAttr = $cap;
+                                } elseif (!empty($contributor)) {
+                                    $titleAttr = 'Submitted by: ' . $contributor;
+                                }
+                                if (!empty($cap)) {
+                                    $titleAttr = $cap;
+                                } elseif (!empty($contributor)) {
+                                    $titleAttr = 'Submitted by: ' . $contributor;
+                                }
                                 echo '<figure class="entry-photo">';
                                 echo '<img class="lightbox-img" src="' . htmlspecialchars($imgUrl . $cache) . '" alt="photo" title="' . htmlspecialchars($titleAttr) . '" loading="lazy" style="cursor:zoom-in;">';
                                 if (!empty($cap)) echo '<figcaption class="entry-caption">' . htmlspecialchars($cap) . '</figcaption>';
