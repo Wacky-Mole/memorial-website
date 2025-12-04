@@ -16,12 +16,13 @@ if (!file_exists($configFile)) {
 // Load config to read current plaintext value if present
 require $configFile;
 
-if (!defined('ADMIN_PASSWORD_PLAIN') || ADMIN_PASSWORD_PLAIN === '') {
+$plain = '';
+if (!defined('ADMIN_PASSWORD_PLAIN') || constant('ADMIN_PASSWORD_PLAIN') === '') {
     echo "No ADMIN_PASSWORD_PLAIN defined in config.php. Nothing to do.\n";
     exit(0);
+} else {
+    $plain = constant('ADMIN_PASSWORD_PLAIN');
 }
-
-$plain = ADMIN_PASSWORD_PLAIN;
 $hash = password_hash($plain, PASSWORD_DEFAULT);
 if ($hash === false) {
     echo "Failed to generate password hash.\n";
