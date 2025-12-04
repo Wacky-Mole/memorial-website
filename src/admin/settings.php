@@ -339,6 +339,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Settings</title>
     <link rel="stylesheet" href="<?php echo htmlspecialchars(asset_url('styles/style.css')); ?>">
+    <style>
+        /* Improved upload message styling (responsive) */
+        .upload-msg {
+            margin-top: 8px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            line-height: 1.25;
+            max-width: 100%;
+            box-sizing: border-box;
+            display: inline-block;
+            transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+        }
+        .upload-msg.success {
+            background: #e9f8ee;
+            color: #1b5e20;
+            border: 1px solid #cdebd1;
+            box-shadow: 0 2px 6px rgba(27,94,32,0.06);
+        }
+        .upload-msg.error {
+            background: #fff1f1;
+            color: #7a0b0b;
+            border: 1px solid #f2c7c7;
+            box-shadow: 0 2px 6px rgba(122,11,11,0.04);
+        }
+        @media (min-width: 768px) {
+            .upload-msg { font-size: 1.05rem; padding: 12px 16px; }
+        }
+        @media (max-width: 420px) {
+            .upload-msg { font-size: 0.95rem; padding: 10px; display: block; }
+        }
+    </style>
     <?php
         $favicon = get_setting('favicon', '');
         if (!empty($favicon)) echo '<link rel="icon" href="' . htmlspecialchars(asset_url($favicon)) . '">';
@@ -376,7 +408,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div id="upload-progress-bar" style="width:0; height:10px; background:#4caf50;"></div>
                 <div id="upload-progress-text" style="margin-top:4px; font-size:90%; color:#555;"></div>
             </div>
-            <div id="upload-message" style="margin-top:8px;"></div>
+            <div id="upload-message" class="upload-msg" role="status" aria-live="polite" style="margin-top:8px;"></div>
             <?php
             // Warn if server PHP upload limits are lower than configured MAX_FILE_SIZE
             $limits = serverUploadLimits();
@@ -531,7 +563,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     uploadBtn.addEventListener('click', function(){
         msg.textContent = '';
-        if (!input.files || input.files.length === 0) { msg.textContent = 'Please select a file first.'; return; }
+        if (!input.files || input.files.length === 0) { msg.className = 'upload-msg error'; msg.textContent = 'Please select a file first.'; return; }
         var file = input.files[0];
         var form = new FormData();
         form.append('memorial_photo', file);
@@ -562,7 +594,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 return;
             }
             if (res.ok) {
-                msg.style.color = 'green';
+                msg.className = 'upload-msg success';
                 msg.textContent = res.message || 'Upload complete';
                 // Compute a site-root-aware base URL so path resolves correctly from /admin/
                 var basePath = window.location.pathname.replace(/\/admin\/.*$/, '/');
@@ -574,14 +606,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 var newPath = basePath + respPath + '?v=' + Date.now();
                 preview.src = newPath;
             } else {
-                msg.style.color = 'red';
+                msg.className = 'upload-msg error';
                 msg.textContent = res.message || 'Upload failed';
             }
         };
 
         xhr.onerror = function(){
             progress.style.display = 'none';
-            msg.style.color = 'red';
+            msg.className = 'upload-msg error';
             msg.textContent = 'Upload failed (network error).';
         };
 
