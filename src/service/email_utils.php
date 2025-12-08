@@ -21,7 +21,14 @@ function send_notification_email(array $entry): bool {
     $to = defined('NOTIFY_EMAIL') ? NOTIFY_EMAIL : (defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '');
     if (empty($to)) return false;
 
-    $subject = 'New memorial submission: ' . (defined('MEMORIAL_NAME') ? MEMORIAL_NAME : 'Memorial');
+    // Prefer DB-backed memorial name when available, otherwise use DEFAULT_MEMORIAL_NAME or 'Memorial'
+    $memName = 'Memorial';
+    if (function_exists('get_setting')) {
+        $memName = get_setting('memorial_name', (defined('DEFAULT_MEMORIAL_NAME') ? DEFAULT_MEMORIAL_NAME : 'Memorial'));
+    } else {
+        $memName = (defined('DEFAULT_MEMORIAL_NAME') ? DEFAULT_MEMORIAL_NAME : 'Memorial');
+    }
+    $subject = 'New memorial submission: ' . $memName;
     $body = "A new submission was received:\n\n";
     $body .= "Contributor: " . ($entry['contributor'] ?? '') . "\n";
     $body .= "Email: " . ($entry['email'] ?? '') . "\n";

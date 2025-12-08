@@ -14,7 +14,8 @@ require_once __DIR__ . '/../service/settings.php';
 require_once __DIR__ . '/../service/upload_check.php';
 
 // Initialize variables for settings
-$memorial_name = function_exists('get_setting') ? get_setting('memorial_name', (defined('MEMORIAL_NAME') ? MEMORIAL_NAME : '')) : (defined('MEMORIAL_NAME') ? MEMORIAL_NAME : '');
+// Prefer DB-backed setting; fall back to DEFAULT_MEMORIAL_NAME (no longer rely on MEMORIAL_NAME constant)
+$memorial_name = function_exists('get_setting') ? get_setting('memorial_name', (defined('DEFAULT_MEMORIAL_NAME') ? DEFAULT_MEMORIAL_NAME : '')) : (defined('DEFAULT_MEMORIAL_NAME') ? DEFAULT_MEMORIAL_NAME : '');
 $message = '';
 
 // Title prefix (e.g., "In Memory of") stored in settings

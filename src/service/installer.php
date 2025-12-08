@@ -64,7 +64,8 @@ class Installer
         $config .= "// Memorial Website Configuration\n";
         $config .= "// Generated on " . date('Y-m-d H:i:s') . "\n\n";
         
-        $config .= "define('MEMORIAL_NAME', " . var_export($data['memorial_name'], true) . ");\n";
+        // Do not write MEMORIAL_NAME into config.php; prefer DB-backed settings
+        // The installer will still store memorial_name in the settings table during DB initialization.
         $config .= "define('SITE_TITLE', " . var_export($data['site_title'], true) . ");\n";
         $config .= "define('MEMORIAL_PHOTO', " . var_export($photoPath ?? '', true) . ");\n";
         $config .= "define('ADMIN_EMAIL', " . var_export($data['admin_email'], true) . ");\n";

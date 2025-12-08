@@ -50,8 +50,21 @@ function renderNavbar($isAdmin = false) {
 
     echo '<nav class="navbar">';
     echo '<div class="nav-inner container">';
-    // brand
-    echo '<div class="nav-brand"><a class="nav-link" href="' . $homeHref . '">' . htmlspecialchars(defined('SITE_TITLE') ? SITE_TITLE : SITE_NAME) . '</a></div>';
+    // brand: prefer DB-backed memorial name (with title prefix) and fall back to SITE_TITLE or SITE_NAME
+    $brandTitle = '';
+    if (function_exists('get_setting')) {
+        $memName = get_setting('memorial_name', (defined('DEFAULT_MEMORIAL_NAME') ? DEFAULT_MEMORIAL_NAME : 'Memorial'));
+        $prefix = get_setting('title_prefix', 'In Memory of');
+        $pos = get_setting('title_prefix_position', 'before');
+        if ($pos === 'after') {
+            $brandTitle = trim($memName . ' ' . $prefix);
+        } else {
+            $brandTitle = trim($prefix . ' ' . $memName);
+        }
+    } else {
+        $brandTitle = (defined('SITE_TITLE') ? SITE_TITLE : SITE_NAME);
+    }
+    echo '<div class="nav-brand"><a class="nav-link" href="' . $homeHref . '">' . htmlspecialchars($brandTitle) . '</a></div>';
     echo '<ul class="nav-list">';
     if ($isAdmin) {
         echo '<li class="nav-item"><a class="nav-link" href="' . $adminHrefBase . '/index.php">Dashboard</a></li>';

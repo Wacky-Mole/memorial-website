@@ -26,8 +26,8 @@ if (!isConfigured()) {
         // Allow admin-configured title prefix and position when available
         $titlePrefix = function_exists('get_setting') ? get_setting('title_prefix', '') : '';
         $titlePos = function_exists('get_setting') ? get_setting('title_prefix_position', 'before') : 'before';
-        // Prefer DB-backed memorial name when available
-        $memorialName = function_exists('get_setting') ? get_setting('memorial_name', (defined('MEMORIAL_NAME') ? MEMORIAL_NAME : '')) : (defined('MEMORIAL_NAME') ? MEMORIAL_NAME : '');
+        // Prefer DB-backed memorial name when available (fall back to DEFAULT_MEMORIAL_NAME)
+        $memorialName = function_exists('get_setting') ? get_setting('memorial_name', (defined('DEFAULT_MEMORIAL_NAME') ? DEFAULT_MEMORIAL_NAME : 'John Doe')) : (defined('DEFAULT_MEMORIAL_NAME') ? DEFAULT_MEMORIAL_NAME : 'John Doe');
         if (!empty($titlePrefix) && !empty($memorialName)) {
             if ($titlePos === 'after') {
                 $displayTitle = $memorialName . ' ' . $titlePrefix;
@@ -90,10 +90,10 @@ if (!isConfigured()) {
 
                     // Center column (main photo)
                     echo '<div class="hero-center">';
-                    if ($photoShown) {
+                        if ($photoShown) {
                         $mtime = @filemtime($fsPath);
                         $cacheBust = $mtime ? ('?v=' . $mtime) : '';
-                        echo '<img class="lightbox-img hero-main" src="' . htmlspecialchars($photoPath . $cacheBust) . '" alt="' . htmlspecialchars(MEMORIAL_NAME) . '" loading="lazy">';
+                        echo '<img class="lightbox-img hero-main" src="' . htmlspecialchars($photoPath . $cacheBust) . '" alt="' . htmlspecialchars($memorialName) . '" loading="lazy">';
                     } else {
                         echo '<div class="hero-placeholder">No photo</div>';
                     }
@@ -118,7 +118,7 @@ if (!isConfigured()) {
 
                     echo '</div>'; // hero-grid
                 ?>
-                <p class="lead">Here you can honor and remember <?php echo htmlspecialchars(!empty(MEMORIAL_NAME) ? MEMORIAL_NAME : 'your loved one'); ?>.</p>
+                <p class="lead">Here you can honor and remember <?php echo htmlspecialchars(!empty($memorialName) ? $memorialName : 'your loved one'); ?>.</p>
                 <a href="form.php" class="btn">Add a Memorial/Photos Entry</a>
             </div>
         </section>

@@ -12,9 +12,9 @@ define('SITE_NAME', 'Memorial Website');
 define('ADMIN_EMAIL', 'admin@example.com');
 
 // Memorial-specific settings (can be updated via admin settings)
-// Name of the person being remembered
-if (!defined('MEMORIAL_NAME')) {
-	define('MEMORIAL_NAME', 'John Doe');
+// Default memorial name used when DB-backed setting is not present
+if (!defined('DEFAULT_MEMORIAL_NAME')) {
+	define('DEFAULT_MEMORIAL_NAME', 'John Doe');
 }
 
 // Path to memorial photo (relative to site root)
@@ -25,8 +25,8 @@ if (!defined('MEMORIAL_PHOTO')) {
 
 // Site title (falls back to SITE_NAME or "In Memory of [NAME]")
 if (!defined('SITE_TITLE')) {
-	if (!empty(MEMORIAL_NAME)) {
-		define('SITE_TITLE', 'In Memory of ' . MEMORIAL_NAME);
+	if (defined('DEFAULT_MEMORIAL_NAME') && !empty(DEFAULT_MEMORIAL_NAME)) {
+		define('SITE_TITLE', 'In Memory of ' . DEFAULT_MEMORIAL_NAME);
 	} else {
 		define('SITE_TITLE', SITE_NAME);
 	}

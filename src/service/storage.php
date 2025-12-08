@@ -74,9 +74,21 @@ function saveMemorialEntry($email, $contributorName, $message, $photoPath = '') 
             // settings table might not exist yet; default to NOT_APPROVED
         }
 
+        // Determine memorial name for this entry: prefer DB-backed setting, then DEFAULT_MEMORIAL_NAME, then empty
+        $memName = '';
+        try {
+            $s2 = $pdo->prepare("SELECT value FROM settings WHERE key = :k LIMIT 1");
+            $s2->execute([':k' => 'memorial_name']);
+            $r2 = $s2->fetch(PDO::FETCH_ASSOC);
+            if ($r2 && isset($r2['value']) && $r2['value'] !== '') $memName = $r2['value'];
+        } catch (Exception $e) { /* ignore */ }
+        if ($memName === '') {
+            if (defined('DEFAULT_MEMORIAL_NAME')) $memName = DEFAULT_MEMORIAL_NAME; else $memName = '';
+        }
+
         $stmt = $pdo->prepare("INSERT INTO entries (memorial,email,contributor,message,photo,created_at,status,embed_allowed,ip) VALUES (:memorial,:email,:contributor,:message,:photo,:created_at,:status,:embed_allowed,:ip)");
         $stmt->execute([
-            ':memorial' => defined('MEMORIAL_NAME') ? MEMORIAL_NAME : '',
+            ':memorial' => $memName,
             ':email' => $email,
             ':contributor' => $contributorName,
             ':message' => $message,

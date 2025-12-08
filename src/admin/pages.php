@@ -13,7 +13,7 @@ require_once __DIR__ . '/../service/settings.php';
 
 function sanitize_html($html) {
     // Fallback sanitizer: conservative allowed tags and attribute cleaning.
-    $allowed = '<p><a><br><strong><b><em><i><u><ul><ol><li><img><h1><h2><h3><h4><h5><h6><blockquote><pre><code>';
+    $allowed = '<p><a><br><strong><b><em><i><u><ul><ol><li><img><video><source><h1><h2><h3><h4><h5><h6><blockquote><pre><code>';
     $clean = strip_tags($html, $allowed);
     // Remove event handler attributes like onclick, onmouseover, etc.
     $clean = preg_replace('/\s+on[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $clean);
@@ -204,11 +204,11 @@ function imageHandler() {
         var file = input.files[0];
         if (!file) return;
         var fd = new FormData();
-        // upload_photo.php expects field name 'memorial_photo'
-        fd.append('memorial_photo', file);
+        // Editor image upload: send to upload_image.php using field name 'image'
+        fd.append('image', file);
 
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'upload_photo.php', true);
+        xhr.open('POST', 'upload_image.php', true);
         xhr.responseType = 'json';
         xhr.onload = function() {
             if (xhr.status === 200 && xhr.response && xhr.response.ok) {

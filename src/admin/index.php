@@ -14,6 +14,9 @@ include_once '../service/navbar.php';
 require_once __DIR__ . '/../service/storage.php';
 require_once __DIR__ . '/../service/settings.php';
 
+// Prefer DB-backed memorial name when available (fallback to DEFAULT_MEMORIAL_NAME)
+$memorialName = function_exists('get_setting') ? get_setting('memorial_name', (defined('DEFAULT_MEMORIAL_NAME') ? DEFAULT_MEMORIAL_NAME : '')) : (defined('DEFAULT_MEMORIAL_NAME') ? DEFAULT_MEMORIAL_NAME : '');
+
 // Compute app root prefix (same logic as navbar) so admin can build correct URLs
 $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 if ($scriptDir === '/' || $scriptDir === '.') $scriptDir = '';
@@ -78,7 +81,7 @@ if ($filter === 'ALL') {
 
     <div class="container">
         <h1>Admin Dashboard - <?php echo htmlspecialchars(defined('SITE_TITLE') ? SITE_TITLE : SITE_NAME); ?></h1>
-        <h2>Manage entries for <?php echo htmlspecialchars(!empty(MEMORIAL_NAME) ? MEMORIAL_NAME : 'the memorial'); ?></h2>
+        <h2>Manage entries for <?php echo htmlspecialchars(!empty($memorialName) ? $memorialName : 'the memorial'); ?></h2>
 
         <?php if (!empty($message)) : ?>
             <div class="success"><?php echo htmlspecialchars($message); ?></div>
