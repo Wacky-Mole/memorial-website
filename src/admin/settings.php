@@ -39,6 +39,9 @@ $current_favicon = get_setting('favicon', '');
 // Hero side images (JSON arrays of {path, url})
 $hero_left = json_decode(get_setting('hero_left', '[]'), true) ?: [];
 $hero_right = json_decode(get_setting('hero_right', '[]'), true) ?: [];
+// Form text customizations (admin-editable)
+$photo_upload_hint_setting = get_setting('photo_upload_hint', '');
+$video_caption_label = get_setting('video_caption_label', 'Video caption (optional):');
 
 // Handle form submission: update memorial name and optional photo
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -274,6 +277,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $smtp_password = trim($_POST['smtp_password'] ?? '');
     $smtp_secure = in_array($_POST['smtp_secure'] ?? 'none', ['none','tls','ssl']) ? $_POST['smtp_secure'] : 'none';
 
+    // Form text customizations
+    $photo_upload_hint_post = trim($_POST['photo_upload_hint'] ?? '');
+    $video_caption_label_post = trim($_POST['video_caption_label'] ?? 'Video caption (optional):');
+
     set_setting('notify_on_submission', $notify_on_submission);
     set_setting('auto_approve', $auto_approve);
     // Save title prefix and position
@@ -289,6 +296,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     set_setting('smtp_username', $smtp_username);
     set_setting('smtp_password', $smtp_password);
     set_setting('smtp_secure', $smtp_secure);
+
+    // Persist form text customizations
+    set_setting('photo_upload_hint', $photo_upload_hint_post);
+    set_setting('video_caption_label', $video_caption_label_post);
 
     // Handle hero side uploads (up to 2 per side). Inputs: hero_left_file_0, hero_left_url_0, hero_right_file_0, hero_right_url_0, etc.
     $maxPerSide = 2;
@@ -379,6 +390,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         @media (max-width: 420px) {
             .upload-msg { font-size: 0.95rem; padding: 10px; display: block; }
         }
+        /* Header with top-left back link and top-right save button */
+        .settings-header { position: relative; display: flex; align-items: center; justify-content: center; padding: 12px 8px; border-bottom: 1px solid #eee; margin-bottom: 14px; }
+        .settings-back-link { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); text-decoration: none; color: #333; font-weight: 600; }
+        .settings-save-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: #2d7d46; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+        .settings-save-btn:active { transform: translateY(-50%) scale(0.99); }
     </style>
     <?php
         $favicon = get_setting('favicon', '');
@@ -386,7 +402,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ?>
 </head>
 <body>
-    <h1>Admin Settings</h1>
+    <div class="settings-header">
+        <a class="settings-back-link" href="index.php">&larr; Back to Admin</a>
+        <h1 style="margin:0;">Admin Settings</h1>
+        <button type="button" class="settings-save-btn" onclick="document.getElementById('settings-form').submit();">Save Settings</button>
+    </div>
 
     <?php if (isset($error)): ?>
         <div class="error"><?php echo htmlspecialchars($error); ?></div>
@@ -396,7 +416,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="success">Settings updated successfully!</div>
     <?php endif; ?>
 
-    <form action="settings.php" method="post" enctype="multipart/form-data">
+    <form id="settings-form" action="settings.php" method="post" enctype="multipart/form-data">
         <label for="memorial_name">Memorial Name:</label>
         <input type="text" id="memorial_name" name="memorial_name" value="<?php echo htmlspecialchars($memorial_name); ?>" required>
 
@@ -452,6 +472,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <label for="notify_email">Notification Email:</label>
         <input type="email" id="notify_email" name="notify_email" value="<?php echo htmlspecialchars($notify_email); ?>">
+
+        <h3>Form Texts</h3>
+        <p>Customize small bits of text shown on the public submission form.</p>
+        <label for="photo_upload_hint">Photo upload hint (leave blank to use default):</label>
+        <input type="text" id="photo_upload_hint" name="photo_upload_hint" value="<?php echo htmlspecialchars($photo_upload_hint_setting); ?>" placeholder="Max file size XMB per photo; large images will be resized automatically.">
+
+        <label for="video_caption_label">Video caption label:</label>
+        <input type="text" id="video_caption_label" name="video_caption_label" value="<?php echo htmlspecialchars($video_caption_label); ?>" placeholder="Video caption (optional):">
 
         <h3>Favicon</h3>
         <p>Select a site favicon or upload your own. SVG/PNG/ICO recommended.</p>
@@ -548,7 +576,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <option value="ssl" <?php echo ($smtp_secure === 'ssl') ? 'selected' : ''; ?>>SSL</option>
         </select>
 
-        <div style="margin-top:12px;">
+        <div style="margin-top:12px;display:none;">
             <button type="submit">Save Settings</button>
         </div>
     </form>

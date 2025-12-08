@@ -73,7 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
     <?php renderNavbar(isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in']); ?>
     <div class="container">
-        <h2>Share Your Memory of <?php echo htmlspecialchars(!empty(MEMORIAL_NAME) ? MEMORIAL_NAME : 'a loved one'); ?></h2>
+        <h2>Share Your Memory of <?php echo htmlspecialchars(function_exists('get_setting') ? get_setting('memorial_name', (defined('DEFAULT_MEMORIAL_NAME') ? DEFAULT_MEMORIAL_NAME : 'a loved one')) : (defined('DEFAULT_MEMORIAL_NAME') ? DEFAULT_MEMORIAL_NAME : 'a loved one')); ?></h2>
         <form action="save.php" method="post" enctype="multipart/form-data">
             <div>
                 <label for="email">Your Email (optional):</label>
@@ -93,7 +93,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div>
                 <label for="photo">Attach photos (optional):</label>
                 <input type="file" name="photo[]" id="photo-input" accept="image/*" multiple>
-                <div id="photo-hint" style="font-size:90%; color:#666; margin-top:6px;">Max file size <?php echo (int)(MAX_FILE_SIZE/1024/1024); ?>MB per photo; large images will be resized automatically.</div>
+                <?php
+                $photo_hint = function_exists('get_setting') ? get_setting('photo_upload_hint', '') : '';
+                if (empty($photo_hint)) {
+                    $photo_hint = 'Max file size ' . (int)(MAX_FILE_SIZE/1024/1024) . 'MB per photo; large images will be resized automatically.';
+                }
+                ?>
+                <div id="photo-hint" style="font-size:90%; color:#666; margin-top:6px;"><?php echo htmlspecialchars($photo_hint); ?></div>
                 <?php
                 // Show server-side upload limit warning if lower than MAX_FILE_SIZE
                 $limits = serverUploadLimits();
@@ -112,7 +118,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <label for="video_url">Embed video (YouTube, Facebook, Nextcloud) — URL only:</label>
                 <input type="url" name="video_url" id="video_url" placeholder="https://...">
                 <div style="font-size:90%; color:#666;">We only accept embeds from YouTube, Facebook, or your Nextcloud server. Do not paste raw embed HTML.</div>
-                <label for="video_caption">Video caption (optional):</label>
+                <?php $video_caption_label = function_exists('get_setting') ? get_setting('video_caption_label', 'Video caption (optional):') : 'Video caption (optional):'; ?>
+                <label for="video_caption"><?php echo htmlspecialchars($video_caption_label); ?></label>
                 <input type="text" name="video_caption" id="video_caption" placeholder="Caption for the video">
             </div>
             <div>
